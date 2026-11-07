@@ -30,3 +30,7 @@ One line per milestone or build day; the commit message holds the playtest evide
 - Biomes are cones: one trapezoid each, 60 wide at the gate to 300 at 400 deep, with straight walls in the biome's colour and invisible walls outside. Floors are blocks plus `WedgePart` triangles. `Biome` and `DepthBand` zones are trapezoids with `NearWidth`/`FarWidth`; burrows in 6 even rows.
 - `Zones.luau`: `Zones.Contains(part, point)` and `Zones.WidthAt(part, localZ)`; plain boxes keep the box test. 328 edge cases (just inside and just outside each angled edge, ends, top, box corners) all correct.
 - Re-ran every check: tags, bands, biome overlap (0 of 54,317 points), walls in playable zones (0), SafeZone tests, escape tests (312 runs from wall tops and 216 from the floor, 0 escapes), FirstSpawn, walk to the Meadow's Far band.
+
+## Build day 2d: biomes wider than their gates (2026-11-07)
+- Each biome starts 110 wide behind the 60 x 50 archway, which sits in an entrance wall (biome colour on the biome side), and widens to 350 at 400 deep. Bands unchanged in depth; widths 110->188, 188->272, 272->350. The widths are the `NearWidth`/`FarWidth` attributes on each `Biome` zone (spec 3.1).
+- Re-ran every check: 0 biome overlap (69,388 points), 0 walls in playable zones, 0 floor holes, 328/328 `Zones.Contains` edge cases, all SafeZone and gate/biome seam tests, pen to gate mean 125 / longest 174, FirstSpawn 40 and facing in, escape tests 336 + 264 runs with 0 escapes.
