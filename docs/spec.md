@@ -367,7 +367,7 @@ After a delivered or banked critter has paid out, it goes through these steps in
 | Event | Effect | When | Priority |
 |---|---|---|---|
 | Golden Hour | Golden ×5, Rainbow ×3 (caps in 4.2) | Every hour from :00 to :05 UTC | P0 |
-| Critter Rush | 2 critters per throw | Admin; part of the Saturday event | P0 |
+| Critter Rush | 2 critters per throw | Admin, 30 minutes unless the command gives a length; part of the Saturday event | P0 |
 | Great Migration | Herds of rare loose critters cross each biome | About once a month | P2 |
  
 **Admin commands**
@@ -1030,6 +1030,9 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | Favourites are built with the Manage Pen menu (C01-M7); rebirth and friends get their own milestone (C01-M9) on Wed 18 Nov, publishable during the launch weekend if it slips | Spec | Final unless changed |
 | 2026-11-07 | Every decision marked "Developer to confirm" is settled: 11 as proposed, 2 changed (the auto-release switch and the default filter, above) | Developer | Final |
 | 2026-11-07 | `Config/Throw` added: 9.2's Config list has no home for the throwing and arrival numbers (4.1, 4.2, 9.4) | Build day 1; developer approved | Final |
+| 2026-11-07 | Critter Rush runs 30 minutes when `/event start critter_rush` gives no length (4.10) | Developer | Final |
+| 2026-11-07 | Greybox map: a hexagonal hub with one gate on each flat (meadow, slot 1, jungle, slot 2, peaks, slot 3 going round); biome wedges are stepped (bands 140, 200 and 260 wide) so every zone is an exact box; pens are open at the front and back with fenced sides | Build (greybox) | Final unless changed |
+| 2026-11-07 | Gate zone parts carry both `Gate` and `SafeZone` tags. Pen spawn points are `Spawn` attachments on the `Pen` zone parts (no new tag). `FirstSpawn` is a SpawnLocation inside `Map.Zones` | Build (greybox) | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.

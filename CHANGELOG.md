@@ -10,3 +10,9 @@ One line per milestone or build day; the commit message holds the playtest evide
 - ProfileStore 1.0.3 (MadStudioRoblox, commit 45c9847, Apache-2.0) vendored in `src/server/Packages/ProfileStore`; not used yet.
 - Tooling: Selene and StyLua configs (Packages excluded), `.gitattributes` (LF), `.gitignore` covers `*.rbxl`/`*.rbxlx`.
 - `default.project.json`: the `Workspace` node (Baseplate) removed so Rojo manages no Workspace children; the map lives in the place file (CLAUDE.md).
+
+## Build day 2: greybox map (2026-11-07)
+- Greybox map built in the place file through MCP (not in Git): a hexagonal hub at the origin with a 40-stud archway gate on each flat, 8 pens on a 62-stud ring, and stepped biome wedges (Near/Mid/Far 140/200/260 wide, 130/140/130 deep) behind the Meadow, Jungle and Snowy Peaks gates. The other 3 gates have a "coming soon" sign and an invisible blocker. Invisible walls round every wedge; a ground plate under everything. Default Baseplate and SpawnLocation removed.
+- `Workspace.Map.Zones` (Model, `ModelStreamingMode = Persistent`) holds every tagged part from spec 3.2: 6 SafeZone (3 hub rectangles + the 3 gates), 3 Biome, 9 DepthBand, 3 Gate, 3 ComingSoonGate, 8 Pen (each with a `Spawn` attachment for returning players), 8 PenDeliveryPoint, 36 Burrow, and FirstSpawn (a SpawnLocation by the Meadow gate).
+- Walking distance pen → gate by navmesh, other pens impassable: mean 126 studs, max 174 (8.7 s at speed 20). `Workspace.AuthorityMode = Server`.
+- `Config/Events`: Critter Rush runs 30 minutes by default (developer decision, spec 16).

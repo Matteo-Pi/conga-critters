@@ -253,7 +253,7 @@ export type EventEffects = {
 export type EventSchedule = {
 	Kind: "Hourly" | "Admin",
 	StartMinute: number?, -- Hourly: minute past each UTC hour
-	DurationMinutes: number?,
+	DurationMinutes: number?, -- Hourly: length each hour; Admin: default length when the command gives none
 }
 
 export type EventDef = {

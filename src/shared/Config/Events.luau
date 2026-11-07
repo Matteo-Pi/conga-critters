@@ -15,8 +15,8 @@ local list: { Types.EventDef } = {
 	{
 		Id = "critter_rush",
 		Name = "Critter Rush",
-		-- Admin-started (`/event start critter_rush [minutes]`). The spec gives no default length; decide in C01-M8.
-		Schedule = { Kind = "Admin" },
+		-- Admin-started (`/event start critter_rush [minutes]`); runs 30 minutes when no length is given (spec 16).
+		Schedule = { Kind = "Admin", DurationMinutes = 30 },
 		Effects = { CrittersPerThrow = 2 },
 	},
 }
