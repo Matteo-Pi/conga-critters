@@ -104,7 +104,7 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
  
 | Time | What happens | Guidance |
 |---|---|---|
-| 0–3 s | New players spawn on a pad beside the Meadow gate; returning players spawn at their pen | A glowing trail to a bait circle just inside the Meadow |
+| 0–3 s | New players spawn on a pad in front of the Meadow gate, facing it; returning players spawn at their pen | A glowing trail to a bait circle just inside the Meadow |
 | 3–10 s | Enter the Meadow and throw; the first critter joins | THROW pulses on phones; a cursor hint on PC |
 | 10–30 s | Throws 2–10. Throw 3 always gives an Uncommon and throw 6 a Rare | Rarity colour burst and sound |
 | By about 30 s | The line reaches the starting leash of 10. THROW greys out and the ×1.25 Conga badge appears | Home arrow |
@@ -123,10 +123,12 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
  
 ### 3.1 Layout
 - **Hub (safe):** a central plaza with 8 pen plots (the first 6 are used, matching the server size) and 6 biome gates around its edge.
-- **Gates:** 3 open at launch (Sunny Meadow, Jungle, Snowy Peaks) and 3 reserved with a "coming soon" sign for weekly biomes. Each gate is an open archway at least 30 studs wide, so lines flow through and one player can't block it.
+- **Gates:** numbered 1–6 clockwise seen from above, in tier order: 1 Sunny Meadow, 2 Jungle, 3 Snowy Peaks, then three "coming soon" gates: 4 for Tier 4, 5 for Tier 5, and 6 for event biomes in turn (Autumn Woods, then the winter biome; economy.md 7.4). Gate 6 is directly counter-clockwise of the Meadow, on your left as you face the Meadow from the spawn. Each `ComingSoonGate` zone has `Slot` (its gate number) and `PlannedUse` (`Tier4`, `Tier5` or `EventBiomes`). Each gate is an open archway at least 30 studs wide, so lines flow through and one player can't block it.
 - **Biomes:** wedges about 400 studs deep, each with three depth bands (Near, Mid and Far). The farther out you throw, the better your luck and the longer the risky walk home.
+- **First spawn:** a pad centred in front of the Meadow gate, about 40 studs from it, with the spawn facing straight into the gate (economy.md 2), so the first critter joins well within 10 s (2.1).
 - **Distances:** any pen to any gate in 15 s or less at base speed.
-- **Safety:** invisible walls at the edges, no hazards and no way to die. Turn off the reset button with `StarterGui:SetCore("ResetButtonCallback", false)`, from a LocalScript, retrying until it succeeds.
+- **Walls:** every edge of the playable area has a visible wall at least `Config.Camera.CameraMaxZoomDistance` + 10 studs high (the greybox uses + 20 to allow for a jump), so no camera angle sees over it. Biome walls are in the biome's colour. Invisible walls at least 60 studs taller than the visible ones sit just outside them, so nobody can leave even from on top of a wall. The camera limit is set on `StarterPlayer` at server boot; if it goes up, raise the walls to match.
+- **Safety:** no hazards and no way to die. Turn off the reset button with `StarterGui:SetCore("ResetButtonCallback", false)`, from a LocalScript, retrying until it succeeds.
 - **Locked gates and other players' pens:** no physical barrier. Show a see-through lock effect. If a player walks in without access, the server moves them back out and shows what they need (for example "🔒 1,000 LP"). This works with or without Server Authority (9.1).
 ### 3.2 Zone tags
 - Gameplay areas are invisible, non-colliding parts tagged with CollectionService inside `Workspace.Map.Zones`.
@@ -138,7 +140,7 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
 | `Biome` | `BiomeId` | Throwing and cutting allowed |
 | `DepthBand` | `BiomeId`, `Band` (1–3) | Luck band inside a biome |
 | `Gate` | `BiomeId` | Gate area, also a SafeZone; where access is checked |
-| `ComingSoonGate` | `Slot` | Reserved for a future biome |
+| `ComingSoonGate` | `Slot` (gate number), `PlannedUse` | Reserved for a future biome; also a SafeZone |
 | `Pen` | `PenIndex` (1–8) | A pen plot: owner only; entering starts a delivery |
 | `PenDeliveryPoint` | `PenIndex` | Where delivered critters pop |
 | `Burrow` | `BiomeId` | Where critters run in from |
@@ -602,7 +604,7 @@ src/
   shared/                      -> ReplicatedStorage.Shared
     Config/                    Rarities, Variants, Critters, Biomes, Upgrades, Line, Cutting,
                                Delivery, Pen, Income, Rebirth, Index, Events, Daily, Shields,
-                               Monetisation, Tutorial, Admin, Debug
+                               Monetisation, Tutorial, Admin, Debug, Throw, Camera
     Types.luau
     Net.luau                   remote names, payload types, rate limits
     Odds.luau                  roll and display maths (server rolls, clients display)
@@ -1034,8 +1036,16 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | `Config/Throw` added: 9.2's Config list has no home for the throwing and arrival numbers (4.1, 4.2, 9.4) | Build day 1; developer approved | Final |
 | 2026-11-07 | Critter Rush runs 30 minutes when `/event start critter_rush` gives no length (4.10) | Developer | Final |
 | 2026-11-07 | An environment art pass on the greybox map is scheduled for Sun 15 Nov, alongside the mesh swap and UI pass. It can move if Sunday runs over but can't be cut, and must be done before Thu 19 Nov because the store art and clips come from real gameplay (10.1) | Developer | Final |
-| 2026-11-07 | Greybox map: a hexagonal hub with one gate on each flat (meadow, slot 1, jungle, slot 2, peaks, slot 3 going round); biome wedges are stepped (bands 140, 200 and 260 wide) so every zone is an exact box; pens are open at the front and back with fenced sides | Build (greybox) | Final unless changed |
+| 2026-11-07 | Greybox map: a hexagonal hub with one gate on each flat (meadow, slot 1, jungle, slot 2, peaks, slot 3 going round); biome wedges are stepped (bands 140, 200 and 260 wide) so every zone is an exact box; pens are open at the front and back with fenced sides | Build (greybox) | Gate order, Near width and walls changed (below) |
 | 2026-11-07 | Gate and ComingSoonGate zone parts also carry the `SafeZone` tag, so the gate areas outside the hub hexagon are safe (9 SafeZone parts). Pen spawn points are `Spawn` attachments on the `Pen` zone parts (no new tag). `FirstSpawn` is a SpawnLocation inside `Map.Zones` | Build (greybox) | Final unless changed |
+| 2026-11-07 | Nobody can leave the playable area: tall walls along the hub edge between gates and round every biome, tested from the top of every wall segment (3.1) | Developer | Final |
+| 2026-11-07 | Every biome has a visible boundary wall in its own colour as well as invisible ones; every gate opening stays clear and at least 30 studs wide (3.1) | Developer | Final |
+| 2026-11-07 | Gate order, clockwise from above: 1 Meadow, 2 Jungle, 3 Snowy Peaks, 4 Tier 4, 5 Tier 5, 6 event biomes (Autumn Woods, then the winter biome); gate 6 directly counter-clockwise of the Meadow. `ComingSoonGate` gains a `PlannedUse` attribute (3.1, 3.2; economy.md 7.4) | Developer | Final |
+| 2026-11-07 | FirstSpawn is centred in front of the Meadow gate, about 40 studs away, facing into it (2.1, 3.1) | Developer | Final |
+| 2026-11-07 | `Config/Camera` added with `CameraMaxZoomDistance = 80`, applied to `StarterPlayer` at boot; tune at C01-M3 with 300-critter lines. Every visible wall is at least `CameraMaxZoomDistance` + 10 high so no camera angle sees over it (3.1, 9.2) | Developer | Final (zoom tunable) |
+| 2026-11-07 | Greybox walls are `CameraMaxZoomDistance` + 20 (100) high: the camera's pitch limit is 80°, so a jumping player's camera can reach head 4.5 + jump 7.2 + 80 × sin 80° = 90.5, just over + 10. Invisible walls outside them go to 160 | Build (greybox) | Final unless changed |
+| 2026-11-07 | Forced by the new gate order (biomes 60° apart): the Near band is 120 wide instead of 140 so neighbouring biomes don't overlap at the hub corner, and each biome has 3 `Biome` zone parts (one per band) instead of one box, so no Biome box reaches into the next biome (9 Biome parts) | Build (greybox) | Final unless changed |
+| 2026-11-07 | Coming-soon gates are closed by a solid panel behind the sign instead of an invisible blocker, so nothing beyond them can be seen | Build (greybox) | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.

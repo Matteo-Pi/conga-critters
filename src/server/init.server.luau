@@ -3,10 +3,14 @@
 -- Init sets up state and must not depend on other services having started; Start may use any service.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Types = require(Shared:WaitForChild("Types") :: ModuleScript)
+
+-- Camera limits (Config/Camera). Set before any player joins; Player copies these from StarterPlayer on join.
+StarterPlayer.CameraMaxZoomDistance = Config.Camera.CameraMaxZoomDistance
 
 -- Boot order: the services table in spec 9.2. Modules not listed here still load, after these, alphabetically.
 local ORDER = {

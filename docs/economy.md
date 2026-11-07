@@ -523,8 +523,8 @@ A flat coin bonus from the start stands in for many completed Index sets. 300 pl
 | Early January | Tier 5, if the game is scaling up | ×10,000 coins and ×625 LP; retune |
  
 ### 7.4 Gate slots
-- The hub has 6 gates: 3 for the launch biomes and 3 "coming soon". Autumn Woods, Tier 4 and the winter biome fill the spare three by 20 December.
-- Event biomes close when their events end (11.7), which frees their gates for Tier 5 and later content without a map change.
+- The hub has 6 gates, numbered clockwise in tier order (spec 3.1): 1 Sunny Meadow, 2 Jungle, 3 Snowy Peaks, 4 Tier 4, 5 Tier 5, and 6 for event biomes in turn.
+- Gate 6 hosts Autumn Woods, then the winter biome. Event biomes close when their events end (11.7), so Autumn Woods' event must end before the winter biome opens on Sun 20 Dec. Tier 5 has its own gate, so it needs no map change either.
 ## 8. Number scale and display
  
 ### 8.1 How big numbers get

@@ -334,6 +334,10 @@ export type DebugConfig = {
 	LogBoot: boolean,
 }
 
+export type CameraConfig = {
+	CameraMaxZoomDistance: number,
+}
+
 -- Saved data (spec 9.6) ------------------------------------------------------------
 
 export type Critter = {

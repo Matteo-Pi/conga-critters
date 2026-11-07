@@ -21,6 +21,7 @@ return table.freeze({
 	Shields = require(script.Shields),
 	Monetisation = require(script.Monetisation),
 	Tutorial = require(script.Tutorial),
+	Camera = require(script.Camera),
 	Admin = require(script.Admin),
 	Debug = require(script.Debug),
 })

@@ -17,3 +17,10 @@ One line per milestone or build day; the commit message holds the playtest evide
 - Walking distance pen → gate by navmesh, other pens impassable: mean 126 studs, max 174 (8.7 s at speed 20). `Workspace.AuthorityMode = Server`.
 - `Config/Events`: Critter Rush runs 30 minutes by default (developer decision, spec 16).
 - SafeZone coverage box-tested: pen corners and delivery points, every gate opening, the hub hexagon's corners and edges, and a 2-stud grid over the hub floor. Fixed a gap: the outer half of each coming-soon gate wasn't covered, so ComingSoonGate parts are now SafeZones too. CLAUDE.md: `docs/` is now the master copy; the Known noise section is removed.
+
+## Build day 2b: map fixes from the developer's playtest (2026-11-07)
+- Escape bug fixed: every edge of the playable area now has a visible wall 100 studs high (`Config.Camera.CameraMaxZoomDistance` + 20), in the biome's colour around each biome and grey along the hub, with invisible walls up to 160 just outside. Coming-soon gates are closed by a solid panel. Tests: 264 runs from the top of 66 wall segments (4 directions each), 0 escapes; 318 floor-level runs into every wall face, 0 escapes, highest point 12.9.
+- Gates renumbered clockwise in tier order: 1 Meadow, 2 Jungle, 3 Snowy Peaks, 4 Tier 4, 5 Tier 5, 6 event biomes. `ComingSoonGate` has `Slot` (gate number) and `PlannedUse`. With biomes 60 degrees apart, the Near band is 120 wide and each biome has 3 `Biome` zone parts.
+- FirstSpawn centred 40 studs in front of the Meadow gate, facing it.
+- New `Config/Camera` (`CameraMaxZoomDistance = 80`), applied to `StarterPlayer` at server boot. At full zoom and the 80 degree pitch limit the camera sits at y 83.3 (90.5 at a jump's peak), below every wall top.
+- CLAUDE.md: the Known noise note is back with the right cause (Roblox's own scripts, not the Baseplate).
