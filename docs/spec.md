@@ -123,8 +123,8 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
  
 ### 3.1 Layout
 - **Hub (safe):** a central plaza with 8 pen plots (the first 6 are used, matching the server size) and 6 biome gates around its edge.
-- **Gates:** numbered 1–6 clockwise seen from above, in tier order: 1 Sunny Meadow, 2 Jungle, 3 Snowy Peaks, then three "coming soon" gates: 4 for Tier 4, 5 for Tier 5, and 6 for event biomes in turn (Autumn Woods, then the winter biome; economy.md 7.4). Gate 6 is directly counter-clockwise of the Meadow, on your left as you face the Meadow from the spawn. Each `ComingSoonGate` zone has `Slot` (its gate number) and `PlannedUse` (`Tier4`, `Tier5` or `EventBiomes`). Each gate is an open archway at least 30 studs wide, so lines flow through and one player can't block it.
-- **Biomes:** wedges about 400 studs deep, each with three depth bands (Near, Mid and Far). The farther out you throw, the better your luck and the longer the risky walk home.
+- **Gates:** numbered 1–6 clockwise seen from above, in tier order: 1 Sunny Meadow, 2 Jungle, 3 Snowy Peaks, then three "coming soon" gates: 4 for Tier 4, 5 for Tier 5, and 6 for event biomes in turn (Autumn Woods, then the winter biome; economy.md 7.4). Gate 6 is directly counter-clockwise of the Meadow, on your left as you face the Meadow from the spawn. Each `ComingSoonGate` zone has `Slot` (its gate number) and `PlannedUse` (`Tier4`, `Tier5` or `EventBiomes`). Each gate, open or coming soon, is an archway about 60 studs wide and 50 tall (never under 30 wide), so lines flow through and one player can't block it.
+- **Biomes:** cones about 400 studs deep: each is a trapezoid that starts at its gate's width and widens steadily to about 300 studs at the far end, with straight angled walls. Each has three depth bands (Near, Mid and Far) at about 0–130, 130–270 and 270–400 studs past the gate. The farther out you throw, the better your luck and the longer the risky walk home. Neighbouring biomes must not overlap. Burrows are spread evenly through each biome.
 - **First spawn:** a pad centred in front of the Meadow gate, about 40 studs from it, with the spawn facing straight into the gate (economy.md 2), so the first critter joins well within 10 s (2.1).
 - **Distances:** any pen to any gate in 15 s or less at base speed.
 - **Walls:** every edge of the playable area has a visible wall at least `Config.Camera.CameraMaxZoomDistance` + 10 studs high (the greybox uses + 20 to allow for a jump), so no camera angle sees over it. Biome walls are in the biome's colour. Invisible walls at least 60 studs taller than the visible ones sit just outside them, so nobody can leave even from on top of a wall. The camera limit is set on `StarterPlayer` at server boot; if it goes up, raise the walls to match.
@@ -133,12 +133,12 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
 ### 3.2 Zone tags
 - Gameplay areas are invisible, non-colliding parts tagged with CollectionService inside `Workspace.Map.Zones`.
 - Set that model's `ModelStreamingMode` to `Persistent` so every client always has it, even with streaming on.
-- Test whether a point is inside a zone with box maths (`CFrame:PointToObjectSpace` against `Size`), not physics queries.
+- Test whether a point is inside a zone with `Zones.Contains(part, point)` in `Zones.luau`: pure maths, not physics queries. It moves the point into the part's object space (`CFrame:PointToObjectSpace`) and checks depth (Z) and height (Y) against `Size`. Box zones then check X against `Size`. Trapezoid zones (`Biome` and `DepthBand`) have `NearWidth` and `FarWidth` attributes: their `CFrame` and `Size` are the bounding box, the `LookVector` points from the near end (local +Z face) to the far end (local −Z face), and abs(X) must be at most half the width at that depth, interpolated between the two.
 | Tag | Attributes | Meaning |
 |---|---|---|
 | `SafeZone` | none | No cuts happen inside: the hub, gates and pens |
-| `Biome` | `BiomeId` | Throwing and cutting allowed |
-| `DepthBand` | `BiomeId`, `Band` (1–3) | Luck band inside a biome |
+| `Biome` | `BiomeId`, `NearWidth`, `FarWidth` | Throwing and cutting allowed; one trapezoid per biome |
+| `DepthBand` | `BiomeId`, `Band` (1–3), `NearWidth`, `FarWidth` | Luck band inside a biome; a trapezoid |
 | `Gate` | `BiomeId` | Gate area, also a SafeZone; where access is checked |
 | `ComingSoonGate` | `Slot` (gate number), `PlannedUse` | Reserved for a future biome; also a SafeZone |
 | `Pen` | `PenIndex` (1–8) | A pen plot: owner only; entering starts a delivery |
@@ -1044,7 +1044,10 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | FirstSpawn is centred in front of the Meadow gate, about 40 studs away, facing into it (2.1, 3.1) | Developer | Final |
 | 2026-11-07 | `Config/Camera` added with `CameraMaxZoomDistance = 80`, applied to `StarterPlayer` at boot; tune at C01-M3 with 300-critter lines. Every visible wall is at least `CameraMaxZoomDistance` + 10 high so no camera angle sees over it (3.1, 9.2) | Developer | Final (zoom tunable) |
 | 2026-11-07 | Greybox walls are `CameraMaxZoomDistance` + 20 (100) high: the camera's pitch limit is 80°, so a jumping player's camera can reach head 4.5 + jump 7.2 + 80 × sin 80° = 90.5, just over + 10. Invisible walls outside them go to 160 | Build (greybox) | Final unless changed |
-| 2026-11-07 | Forced by the new gate order (biomes 60° apart): the Near band is 120 wide instead of 140 so neighbouring biomes don't overlap at the hub corner, and each biome has 3 `Biome` zone parts (one per band) instead of one box, so no Biome box reaches into the next biome (9 Biome parts) | Build (greybox) | Final unless changed |
+| 2026-11-07 | Forced by the new gate order (biomes 60° apart): the Near band is 120 wide instead of 140 so neighbouring biomes don't overlap at the hub corner, and each biome has 3 `Biome` zone parts (one per band) instead of one box, so no Biome box reaches into the next biome (9 Biome parts) | Build (greybox) | Replaced by cone biomes (below) |
+| 2026-11-07 | Gate archways about 60 studs wide and 50 tall, open and coming-soon gates alike (3.1). The hub didn't need to grow: a 60-stud gate and its pillars take 72 of each 121-stud side | Developer | Final |
+| 2026-11-07 | Cone-shaped biomes: one trapezoid per biome from the gate's width (60) to about 300 at the far end, 400 deep, with straight angled walls in the biome's colour and invisible walls outside. One `Biome` part and one part per `DepthBand`, each a trapezoid with `NearWidth` and `FarWidth`; bands stay at 0–130, 130–270 and 270–400. `Zones.Contains` handles trapezoids and plain boxes (3.1, 3.2) | Developer | Final |
+| 2026-11-07 | Cone floors are a centre block plus two `WedgePart` triangles per band (basic parts, not meshes). Each side flares at 16.7°, well inside the 30° to the next biome, so the full 300-stud width fits. Burrows: 6 rows evenly through the depth, 2 per row at a quarter and three quarters of the width (12 per biome) | Build (greybox) | Final unless changed |
 | 2026-11-07 | Coming-soon gates are closed by a solid panel behind the sign instead of an invisible blocker, so nothing beyond them can be seen | Build (greybox) | Final unless changed |
  
 ## 17. Sources

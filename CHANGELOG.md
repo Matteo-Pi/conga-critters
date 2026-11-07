@@ -24,3 +24,9 @@ One line per milestone or build day; the commit message holds the playtest evide
 - FirstSpawn centred 40 studs in front of the Meadow gate, facing it.
 - New `Config/Camera` (`CameraMaxZoomDistance = 80`), applied to `StarterPlayer` at server boot. At full zoom and the 80 degree pitch limit the camera sits at y 83.3 (90.5 at a jump's peak), below every wall top.
 - CLAUDE.md: the Known noise note is back with the right cause (Roblox's own scripts, not the Baseplate).
+
+## Build day 2c: wider gates, cone biomes, Zones.luau (2026-11-07)
+- Every gate archway is 60 wide and 50 tall; the hub didn't need to grow. Pen to gate: mean 125, longest 174 studs.
+- Biomes are cones: one trapezoid each, 60 wide at the gate to 300 at 400 deep, with straight walls in the biome's colour and invisible walls outside. Floors are blocks plus `WedgePart` triangles. `Biome` and `DepthBand` zones are trapezoids with `NearWidth`/`FarWidth`; burrows in 6 even rows.
+- `Zones.luau`: `Zones.Contains(part, point)` and `Zones.WidthAt(part, localZ)`; plain boxes keep the box test. 328 edge cases (just inside and just outside each angled edge, ends, top, box corners) all correct.
+- Re-ran every check: tags, bands, biome overlap (0 of 54,317 points), walls in playable zones (0), SafeZone tests, escape tests (312 runs from wall tops and 216 from the floor, 0 escapes), FirstSpawn, walk to the Meadow's Far band.
