@@ -823,7 +823,7 @@ Use Roblox AnalyticsService through `TelemetryService`. Check the function names
 | Thu 12 Nov | 4 | C01-M4, including the placement and storage rules |
 | Fri 13 Nov | 5 | C01-M5; two-client test; cheater checklist |
 | Sat 14 Nov | 6 | Tune the first 60 s so the first critter arrives within 10 s; buy the animal pack and icon key art; submit custom Quick Words for review (4.12) |
-| Sun 15 Nov | 7 | Swap in pack meshes; UI pass |
+| Sun 15 Nov | 7 | Swap in pack meshes; environment art pass on the greybox map (section 8: a distinct palette for each biome, plus the hub, pens and gates); UI pass |
 | Mon 16 Nov | 8 | C01-M6 |
 | Tue 17 Nov | 9 | C01-M7, including the Manage Pen menu and favourites |
 | Wed 18 Nov | 10 | C01-M8 and C01-M9; analytics events |
@@ -831,6 +831,8 @@ Use Roblox AnalyticsService through `TelemetryService`. Check the function names
 | **Fri 20 Nov** | **12** | **Soft launch.** $20–40 of Sponsored ads across 3 thumbnails; one clip a day on TikTok, YouTube Shorts and Roblox Moments |
 | Sat 21 – Sun 22 Nov | 13–14 | Watch the numbers; hotfixes |
  
+If Sunday runs over, the environment art pass can move to a later day, but it can't be cut: it must be finished before Thu 19 Nov, because the thumbnails, icons and clips come from real gameplay (0.3, rule 5).
+
 If C01-M9 isn't ready for Thursday's regression, launch without it and publish it during the launch weekend. Players on an hour a day can make their first rebirth on day 3, Sun 22 Nov (economy.md 6.1).
  
 Weeks 3 and 4 are in section 14.
@@ -1031,6 +1033,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | Every decision marked "Developer to confirm" is settled: 11 as proposed, 2 changed (the auto-release switch and the default filter, above) | Developer | Final |
 | 2026-11-07 | `Config/Throw` added: 9.2's Config list has no home for the throwing and arrival numbers (4.1, 4.2, 9.4) | Build day 1; developer approved | Final |
 | 2026-11-07 | Critter Rush runs 30 minutes when `/event start critter_rush` gives no length (4.10) | Developer | Final |
+| 2026-11-07 | An environment art pass on the greybox map is scheduled for Sun 15 Nov, alongside the mesh swap and UI pass. It can move if Sunday runs over but can't be cut, and must be done before Thu 19 Nov because the store art and clips come from real gameplay (10.1) | Developer | Final |
 | 2026-11-07 | Greybox map: a hexagonal hub with one gate on each flat (meadow, slot 1, jungle, slot 2, peaks, slot 3 going round); biome wedges are stepped (bands 140, 200 and 260 wide) so every zone is an exact box; pens are open at the front and back with fenced sides | Build (greybox) | Final unless changed |
 | 2026-11-07 | Gate and ComingSoonGate zone parts also carry the `SafeZone` tag, so the gate areas outside the hub hexagon are safe (9 SafeZone parts). Pen spawn points are `Spawn` attachments on the `Pen` zone parts (no new tag). `FirstSpawn` is a SpawnLocation inside `Map.Zones` | Build (greybox) | Final unless changed |
  
