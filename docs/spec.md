@@ -1029,6 +1029,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | Custom Quick Words, such as "Watch your tail!" and "Follow me!": a Creator Hub setting with no code, submitted before launch (P1, as Roblox must approve them) | Developer | Final |
 | 2026-11-07 | Favourites are built with the Manage Pen menu (C01-M7); rebirth and friends get their own milestone (C01-M9) on Wed 18 Nov, publishable during the launch weekend if it slips | Spec | Final unless changed |
 | 2026-11-07 | Every decision marked "Developer to confirm" is settled: 11 as proposed, 2 changed (the auto-release switch and the default filter, above) | Developer | Final |
+| 2026-11-07 | `Config/Throw` added: 9.2's Config list has no home for the throwing and arrival numbers (4.1, 4.2, 9.4) | Build day 1; developer approved | Final |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
