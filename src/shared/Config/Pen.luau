@@ -8,13 +8,13 @@ local deepFreeze = require(script.Parent.Parent.Util.DeepFreeze)
 local Pen: Types.PenConfig = {
 	BigStorageBonus = 100, -- Big Storage pass
 
-	-- Critters matching these overflow a full storage (up to OverflowLimit) and are never auto-released,
-	-- whatever the filter (spec 4.5.6 steps 2 and 4): rarity rank at least ProtectedMinRank, or a listed variant.
-	-- Bound critters ALWAYS count too, but that is a hard rule (spec 0.3 rule 6, spec 4.5.6), checked in
-	-- PenService code, not a Config value.
-	-- Not the same as the spec's "protected" (pinned or favourite), which stops every automatic move or release.
-	ProtectedMinRank = 5, -- Legendary
-	ProtectedVariants = { "Rainbow" },
+	-- Never-release critters: never auto-released, whatever the filter, and they overflow a full storage
+	-- (up to OverflowLimit) instead of being released (spec 4.5.6 steps 2 and 4). A critter is never-release if
+	-- its rarity rank is at least NeverReleaseMinRank or its variant is listed in NeverReleaseVariants.
+	-- Bound critters are ALWAYS never-release too, but that is a hard rule (spec 0.3 rule 6, spec 4.5.6),
+	-- checked in PenService code, not a Config value.
+	NeverReleaseMinRank = 5, -- Legendary
+	NeverReleaseVariants = { "Rainbow" },
 	OverflowLimit = 50,
 
 	-- Defaults for new players' settings (saved per player in Settings).

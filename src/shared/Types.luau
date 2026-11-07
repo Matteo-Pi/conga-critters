@@ -167,8 +167,8 @@ export type AutoReleaseSettings = {
 
 export type PenConfig = {
 	BigStorageBonus: number,
-	ProtectedMinRank: number, -- rarity rank; plus bound critters, always (hard rule, in code)
-	ProtectedVariants: { string },
+	NeverReleaseMinRank: number, -- rarity rank; plus bound critters, always (hard rule, in code)
+	NeverReleaseVariants: { string },
 	OverflowLimit: number,
 	AutoPlace: boolean,
 	AutoRelease: AutoReleaseSettings,
