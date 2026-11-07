@@ -17,7 +17,7 @@ A Roblox game (ages 9–15, phones first), built with Rojo 7.7.1, Git and Roblox
 - Your training data may predate Server Authority and the Input Action System. Read the current docs with the MCP tools before using them.
 - Finish a milestone by running its acceptance checks in a playtest. Paste the evidence (console lines, numbers, screenshots) into the commit message, for example `C01-M3: follower chain`, and add a line to `CHANGELOG.md`.
 - Where the spec is silent, pick the simplest option that fits the pillars (spec 1.2), log it in spec 16 and flag it in the commit message. **Ask the developer first** if the choice touches money, fairness to young players or Roblox policy.
-- The files in `docs/` mirror master copies kept in the developer's claude.ai project. If you change one, say so in your final message so the master can be updated.
+- `docs/` in this repo is the master copy of the spec and economy. The developer's claude.ai project keeps a copy: if you change either file, say so in your final message so they can refresh it.
 
 ## Hard rules (spec 0.3, short version)
 1. No unlicensed IP: real animals and original designs only.
@@ -33,6 +33,3 @@ A Roblox game (ages 9–15, phones first), built with Rojo 7.7.1, Git and Roblox
 1. Run `rojo serve` in the repo folder.
 2. Open the place "Conga Critters" (place ID 88840993419398) in Studio, then click Rojo → Connect.
 3. Run `claude` from the repo folder.
-
-## Known noise
-Baseplate playtests log `rbxassetid://203785492 ... Asset type does not match` three times. It isn't from our scripts. Ignore it unless it persists once the real map exists.

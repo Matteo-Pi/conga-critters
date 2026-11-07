@@ -1032,7 +1032,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | `Config/Throw` added: 9.2's Config list has no home for the throwing and arrival numbers (4.1, 4.2, 9.4) | Build day 1; developer approved | Final |
 | 2026-11-07 | Critter Rush runs 30 minutes when `/event start critter_rush` gives no length (4.10) | Developer | Final |
 | 2026-11-07 | Greybox map: a hexagonal hub with one gate on each flat (meadow, slot 1, jungle, slot 2, peaks, slot 3 going round); biome wedges are stepped (bands 140, 200 and 260 wide) so every zone is an exact box; pens are open at the front and back with fenced sides | Build (greybox) | Final unless changed |
-| 2026-11-07 | Gate zone parts carry both `Gate` and `SafeZone` tags. Pen spawn points are `Spawn` attachments on the `Pen` zone parts (no new tag). `FirstSpawn` is a SpawnLocation inside `Map.Zones` | Build (greybox) | Final unless changed |
+| 2026-11-07 | Gate and ComingSoonGate zone parts also carry the `SafeZone` tag, so the gate areas outside the hub hexagon are safe (9 SafeZone parts). Pen spawn points are `Spawn` attachments on the `Pen` zone parts (no new tag). `FirstSpawn` is a SpawnLocation inside `Map.Zones` | Build (greybox) | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
