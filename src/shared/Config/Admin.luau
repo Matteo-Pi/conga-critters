@@ -6,7 +6,7 @@ local Types = require(script.Parent.Parent.Types)
 local deepFreeze = require(script.Parent.Parent.Util.DeepFreeze)
 
 local Admin: Types.AdminConfig = {
-	Whitelist = {}, -- UserIds
+	Whitelist = { 277859415 }, -- UserIds
 }
 
 return deepFreeze(Admin)
