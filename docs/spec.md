@@ -3,7 +3,7 @@ title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
 spec_version: 0.23
 date: 2026-11-08
-status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps; re-run for the 150 cap (v0.23), with checks 1 (drawn part) and 6–8 waiting for a focused Studio window. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
+status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps; all re-run for the 150 cap (v0.23). Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
   - "/docs/economy.md (v0.5): every tuning number, and the simulation behind them"
