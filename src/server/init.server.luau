@@ -9,6 +9,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Types = require(Shared:WaitForChild("Types") :: ModuleScript)
 
+-- Config validator (spec 9.10): stops the start in Studio, warns in live servers.
+require(script:WaitForChild("ConfigValidator") :: ModuleScript).Run()
+
 -- Camera limits (Config/Camera). Set before any player joins; Player copies these from StarterPlayer on join.
 StarterPlayer.CameraMaxZoomDistance = Config.Camera.CameraMaxZoomDistance
 

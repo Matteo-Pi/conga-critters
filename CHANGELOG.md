@@ -34,3 +34,12 @@ One line per milestone or build day; the commit message holds the playtest evide
 ## Build day 2d: biomes wider than their gates (2026-11-07)
 - Each biome starts 110 wide behind the 60 x 50 archway, which sits in an entrance wall (biome colour on the biome side), and widens to 350 at 400 deep. Bands unchanged in depth; widths 110->188, 188->272, 272->350. The widths are the `NearWidth`/`FarWidth` attributes on each `Biome` zone (spec 3.1).
 - Re-ran every check: 0 biome overlap (69,388 points), 0 walls in playable zones, 0 floor holes, 328/328 `Zones.Contains` edge cases, all SafeZone and gate/biome seam tests, pen to gate mean 125 / longest 174, FirstSpawn 40 and facing in, escape tests 336 + 264 runs with 0 escapes.
+
+## C01-M1: config, odds, zones, map service (2026-11-08)
+- `Odds.luau`: luck (bait × band × Server Luck × event, event capped at 3, λ capped at 10), rarity chances for the Normal and Golden Bait tables, variant chances with Golden Bait and Golden Hour multipliers and caps, species pools, and `Roll(biome, ctx, rng)`; every number from Config.
+- `Zones.Classify`/`Describe` with a CollectionService index; `MapService` assigns the lowest free pen on join (also a `PenIndex` attribute on the Player), frees it on leave, and answers zone queries.
+- `Unlocks.luau` plus session LP and debug unlocks in `PlayerStateService`: one `IsBiomeUnlocked` rule for throws (M2) and gates (M4).
+- `ConfigValidator` runs before the services boot: unique ids, every biome has every rarity, positive weights, contiguous bands, rising upgrade costs, a model for every species, and P0 ids in live servers. It stops the boot in Studio.
+- Debug commands through chat `/debug` (or `/d`) and the Studio `DebugBridge`: help, pens, zone, roll, check, lp, unlock, relock, unlocked. The other spec 9.10 commands reply with their milestone.
+- Place file: 30 placeholder critter models in `ReplicatedStorage.Assets.Critters`, plus empty `Fx` and `Sounds` folders.
+- Checks: odds 100k × 4 cases all within 4 SE (max |z| 2.10), worked table 9/9; zones 39/39; pens 7/7; console clean.

@@ -1,9 +1,9 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.8
+spec_version: 0.9
 date: 2026-11-08
-status: "Build day 1 done: repo skeleton, Config, greybox map. C01-M1 starts Monday 2026-11-09."
+status: "C01-M1 done: Config validator, Odds, zone classification, pen assignment, unlock rule, debug commands. C01-M2 next."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
   - "/docs/economy.md (v0.4): every tuning number, and the simulation behind them"
@@ -609,10 +609,13 @@ src/
     Net.luau                   remote names, payload types, rate limits
     Odds.luau                  roll and display maths (server rolls, clients display)
     Path.luau                  breadcrumb path maths (server and clients)
-    Zones.luau                 point-in-zone tests
+    Zones.luau                 point-in-zone tests and zone classification
+    Unlocks.luau               biome unlock rule and top tier (server and clients)
     Format.luau                number formatting
   server/                      -> ServerScriptService.Server
-    init.server.luau           boot: require services, Init() all, then Start() all
+    init.server.luau           boot: validate Config, require services, Init() all, then Start() all
+    ConfigValidator.luau       config validator (9.10)
+    Checks/                    acceptance checks run by the `check` debug command; not loaded at boot
     Packages/ProfileStore
     Services/                  see the table below
   client/                      -> StarterPlayer.StarterPlayerScripts.Client
@@ -1051,6 +1054,13 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-07 | With 110→350 the flare is still 16.7° a side; the outer invisible wall reaches 27.2° off the biome's axis at the entrance, inside the 30° to the next biome, so nothing was narrowed. The entrance wall is grey on the hub side and the biome's wall colour on the biome side | Build (greybox) | Final unless changed |
 | 2026-11-07 | Cone floors are a centre block plus two `WedgePart` triangles per band (basic parts, not meshes). Each side flares at 16.7°, well inside the 30° to the next biome, so the full 300-stud width fits. Burrows: 6 rows evenly through the depth, 2 per row at a quarter and three quarters of the width (12 per biome) | Build (greybox) | Final unless changed |
 | 2026-11-07 | Coming-soon gates are closed by a solid panel behind the sign instead of an invisible blocker, so nothing beyond them can be seen | Build (greybox) | Final unless changed |
+| 2026-11-08 | Placeholder critter models (a rarity-coloured block and head, S/M/L sizes) in `ReplicatedStorage.Assets.Critters.<speciesId>`, built in the place file, so the validator's mesh check (9.10) passes until the pack meshes arrive on day 7 | C01-M1 | Replace on day 7 |
+| 2026-11-08 | Acceptance checks live in `src/server/Checks` (`OddsCheck`, `ZonesCheck`, `PensCheck`); boot doesn't load them; the `check` debug command runs them | C01-M1 | Final unless changed |
+| 2026-11-08 | Debug commands arrive as chat `/debug <command>` (alias `/d`) through a server-created `TextChatCommand`, and in Studio through a `ServerScriptService.DebugBridge` BindableFunction for MCP's `execute_luau`. This differs from 4.10's `AdminCommand` remote: bring the two together in C01-M8 when admin commands arrive. Replies go to the server console | C01-M1 | Merge in C01-M8 |
+| 2026-11-08 | One shared biome-unlock rule from M1: `Unlocks.luau` (LP ≥ `GateLP`, or a debug unlock) behind `PlayerStateService.IsBiomeUnlocked`, with session LP (default 0) until C01-M4 moves LP to the saved profile. The `lp` and `unlock` debug commands work now, so C01-M2 can test throws in an unlocked Jungle | Developer | Final |
+| 2026-11-08 | Pushing players out of locked gates and other players' pens (3.1) waits for C01-M4, which tests it (check 5). Returning players spawning at their pen also waits for M4's saved data; until then everyone spawns at FirstSpawn | C01-M1 | Do in C01-M4 |
+| 2026-11-08 | Pens go to the lowest free plot (1–8); a rejoining player gets whichever pen is free then, not necessarily their old one (10.2 M1 check 3) | C01-M1 | Final unless changed |
+| 2026-11-08 | The validator's "live product ids aren't zero" applies to P0 passes and products only, so P1/P2 entries can stay at 0 until they're made | C01-M1 | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1070,4 +1080,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.6 (2026-11-07): the Manage Pen menu introduces itself the first time a delivery leaves a critter in storage, never before 5 minutes of play, instead of at 2–3 minutes. The first release after the tutorial gets a wordless hop-home cue and a button pulse. Matching timeline, saved-data flags, a debug playtime command, analytics and the M7 check (2.1, 4.5.8, 9.6, 9.9, 9.10, 10.2).
 - 0.7 (2026-11-07): the developer settled all 13 "Developer to confirm" decisions (16); 11 stand as written. Two changes: an auto-release on/off switch ships at the soft launch in the Manage Pen menu (4.5.6, 4.5.8; `SetPenSettings` gains `autoRelease`, 9.4), and the default filter releases Rare or lower, Normal only, keeping Golden critters (`IncludeGolden` defaults to false, 9.6). Matching M4 check 8 and M7 check 9, an analytics event for the switch, Update 1's list, a new risk row, and the day-14 review items in 14.
 - 0.8 (2026-11-08): build day 1. The repo skeleton (Rojo, services and controllers booting in order) and `src/shared/Config` filled from economy.md, with `Config/Camera` added. The greybox map in the place file: 8 pens round a hexagonal hub, 6 gates in tier order clockwise (Meadow, Jungle, Peaks, Tier 4, Tier 5, event biomes), each a 60 × 50 archway, and cone biomes 110 wide at the entrance to 350 at 400 deep, with walls taller than the camera zoom limit. `Zones.Contains` tests box and trapezoid zones. Server Authority is on. Matching changes to 2.1, 3.1, 3.2, 4.10 (Critter Rush defaults to 30 minutes), 9.2, 10.1 (art pass on Sun 15 Nov) and 16.
+- 0.9 (2026-11-08): C01-M1. 9.2's layout gains `Unlocks.luau`, `ConfigValidator.luau` and `Checks/`. Section 16 logs placeholder critter models, the debug command routes (chat `TextChatCommand` and a Studio bridge, to merge with 4.10's `AdminCommand` in M8), the shared unlock rule with session LP, gate and pen access moved to M4, pen assignment, and the P0-only zero-id check.
  

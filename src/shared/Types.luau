@@ -332,6 +332,10 @@ export type AdminConfig = {
 
 export type DebugConfig = {
 	LogBoot: boolean,
+	ChatCommand: string,
+	ChatCommandShort: string,
+	StudioBridgeName: string,
+	RollMaxSamples: number,
 }
 
 export type CameraConfig = {
