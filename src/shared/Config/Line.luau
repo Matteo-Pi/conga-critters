@@ -43,6 +43,10 @@ local Line: Types.LineConfig = {
 		AirborneGap = 1.5,
 		FloorProbe = 60,
 		HopMinGap = 1.0, -- a take-off within this many studs of the last hop marker adds none
+		-- Path length added by height (a fence jumped over, a step) is caught up at LagCatchUp studs a second instead of
+		-- all at once, up to LagMax studs (any more is caught up at once).
+		LagCatchUp = 10,
+		LagMax = 20,
 	},
 	-- Client drawing (spec 9.5). Hand-tuned in C01-M3.
 	Render = {

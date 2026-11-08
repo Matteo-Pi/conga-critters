@@ -12,6 +12,12 @@
 -- jump on the spot adds no path at all and a running jump adds only its ground track. Each take-off is kept as a hop
 -- marker at the path distance (and point) where the leader left the ground: a follower plays a hop as it passes a
 -- marker (the client draws it), and the marker is dropped once the last follower has passed it (`DropPassed`).
+--
+-- Height costs path length but not progress: when a breadcrumb climbs or drops (a fence the leader jumps over, a
+-- step), the extra length over its flat distance goes into `Lag`, and followers sit that much further back along the
+-- path. Lag shrinks at LagCatchUp studs a second, so the line climbs over and then closes up smoothly, instead of
+-- every follower lurching forward by the height at once. Use `FollowDistance` (not HeadDistance) for where the line
+-- is measured from.
 
 local Config = require(script.Parent.Config)
 
@@ -30,6 +36,8 @@ export type Path = {
 	GroundDist: number, -- head distance at the last Record on the ground
 	GroundAt: Vector3, -- … and the leader's ground point then
 	FloorY: number, -- height of the ground point at the last Record (the floor below, while airborne)
+	Lag: number, -- studs of path (from height changes) the followers have yet to catch up
+	LagClock: number, -- os.clock() of the last Record, for the catch-up
 }
 
 local INITIAL_SIZE = 64
@@ -53,6 +61,8 @@ function Path.new(keep: number): Path
 		GroundDist = 0,
 		GroundAt = Vector3.zero,
 		FloorY = 0,
+		Lag = 0,
+		LagClock = 0,
 	}
 end
 
@@ -178,6 +188,7 @@ function Path.Reset(path: Path, position: Vector3, back: Vector3): ()
 	path.Count = 0
 	table.clear(path.HopDist)
 	table.clear(path.HopAt)
+	path.Lag = 0
 	push(path, position + direction * path.Keep, 0)
 	push(path, position, path.Keep)
 	path.GroundDist = path.Keep
@@ -207,6 +218,13 @@ end
 -- the leader has just left the ground, which also adds a hop marker where it took off (unless one is within
 -- HopMinGap). `back` points behind the leader, for resets.
 function Path.Record(path: Path, position: Vector3, airborne: boolean, back: Vector3): (boolean, boolean)
+	local now = os.clock()
+	if path.Lag > 0 then
+		local dt = math.clamp(now - path.LagClock, 0, 0.5)
+		path.Lag = math.max(0, path.Lag - Config.Line.Path.LagCatchUp * dt)
+	end
+	path.LagClock = now
+
 	local reset = false
 	if path.Count == 0 then
 		Path.Reset(path, position, back)
@@ -219,6 +237,8 @@ function Path.Record(path: Path, position: Vector3, airborne: boolean, back: Vec
 			reset = true
 		elseif step >= Config.Line.Path.MinStep then
 			push(path, position, path.Dist[path.Head] + step)
+			local flat = Vector3.new(position.X - newest.X, 0, position.Z - newest.Z).Magnitude
+			path.Lag = math.min(path.Lag + step - flat, Config.Line.Path.LagMax)
 		end
 	end
 
@@ -242,8 +262,13 @@ function Path.Record(path: Path, position: Vector3, airborne: boolean, back: Vec
 	return reset, tookOff
 end
 
+-- Path distance the followers are measured back from: the head's, less the Lag they have yet to catch up.
+function Path.FollowDistance(path: Path, head: Vector3): number
+	return Path.HeadDistance(path, head) - path.Lag
+end
+
 -- Drop the hop markers every follower has passed: those at or behind `tailDistance`, the path distance of the last
--- follower (the head distance minus its offset; the head distance itself for an empty line).
+-- follower (the follow distance minus its offset; the follow distance itself for an empty line).
 function Path.DropPassed(path: Path, tailDistance: number): ()
 	local hops = path.HopDist
 	if #hops == 0 or hops[1] > tailDistance then
@@ -273,7 +298,7 @@ function Path.Newest(path: Path, n: number): { Vector3 }
 	return out
 end
 
--- Place followers 1..count at `offsets[i]` studs behind `head` (ascending). Writes positions to `outPos` and the
+-- Place followers 1..count at `offsets[i]` (plus the path's Lag) studs behind `head` (ascending). Writes positions to `outPos` and the
 -- forward direction of the path there (towards the leader, not normalised to flat) to `outDir`. Past the end of the
 -- path, followers continue in a straight line.
 function Path.Sample(
@@ -309,9 +334,10 @@ function Path.Sample(
 			forward = d.Unit
 		end
 	end
+	local lag = path.Lag
 	local i = 1
 	while i <= count do
-		local want = offsets[i]
+		local want = offsets[i] + lag
 		if want <= acc + segLen then
 			local a = if segLen > 1e-4 then (want - acc) / segLen else 0
 			outPos[i] = segStart:Lerp(segEnd, a)
@@ -323,7 +349,7 @@ function Path.Sample(
 				-- Off the end: carry on straight back from the oldest point.
 				local tail = acc + segLen
 				for j = i, count do
-					outPos[j] = segEnd - forward * (offsets[j] - tail)
+					outPos[j] = segEnd - forward * (offsets[j] + lag - tail)
 					outDir[j] = forward
 				end
 				return

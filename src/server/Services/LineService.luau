@@ -410,7 +410,7 @@ local function sample()
 		-- Ground height only, never in the air (4.3); a take-off leaves a hop marker.
 		local ground, airborne = Path.Locate(path, root, humanoid)
 		Path.Record(path, ground, airborne, -root.CFrame.LookVector)
-		Path.DropPassed(path, Path.HeadDistance(path, ground) - (line.Offsets[#line.Entries] or 0))
+		Path.DropPassed(path, Path.FollowDistance(path, ground) - (line.Offsets[#line.Entries] or 0))
 		applyWalkSpeed(line)
 	end
 end

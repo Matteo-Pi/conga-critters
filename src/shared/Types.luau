@@ -112,6 +112,8 @@ export type LinePathConfig = {
 	AirborneGap: number, -- studs: feet higher than this above the floor below = airborne
 	FloorProbe: number, -- studs below the feet to look for a floor
 	HopMinGap: number, -- studs: a take-off this close to the last hop marker adds none
+	LagCatchUp: number, -- studs a second: how fast followers catch up path length added by height
+	LagMax: number, -- studs: most such length caught up gradually
 }
 
 export type LineRenderConfig = {

@@ -62,3 +62,4 @@ One line per milestone or build day; the commit message holds the playtest evide
 - Tuning (developer's request): the jump wave raised to 4.0 studs (was 1.5).
 - Developer's request: jumping during a wave no longer cuts it off; each jump starts its own wave, up to `JumpWaveMax` (16) per line at once, and overlapping waves take the higher hop, not the sum.
 - Developer's request: every jump, walking or standing, sends the hop wave down the line; hops at the take-off spot are off (`Render.JumpHopAtSpot`), `JumpWaveStill` removed. Spec 4.3, 9.5 and M3 check 7 updated.
+- Fix (developer's playtest): jumping over a pen fence no longer makes the line lurch forward; path length added by height is caught up at `LagCatchUp` (10 studs/s, up to `LagMax` 20) in `Path.luau`, server and client.

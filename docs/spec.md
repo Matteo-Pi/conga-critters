@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.17
+spec_version: 0.18
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -708,6 +708,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - Follower i sits behind the leader at the summed spacing of followers 1 to i. Work out every position in one pass along the path, so the cost grows with points plus followers, not points times followers.
 - A jump of more than 25 studs between samples (a respawn, or the server moving a player) resets the path to a straight line behind the leader.
 - Breadcrumbs are at ground height, never in the air: the leader's X and Z with the height of the floor straight below it (a downward raycast into `Workspace.Map`). The leader is airborne when its feet are more than 1.5 studs above that floor, so steps and slopes don't count. A jump on the spot therefore adds no path.
+- Height costs path length but not progress: when the path climbs or drops (a fence jumped over, a step), the extra length over the flat distance is caught up gradually (`Config.Line.Path.LagCatchUp`, 10 studs a second, up to `LagMax` 20), so the line climbs over and then closes up instead of every follower lurching forward at once.
 - Every take-off, walking or standing, sends a hop wave down the line from front to back (`Config.Line.Render.JumpWave`, on). Each jump starts its own wave, so several can run down the line at once; a follower reached by two at the same moment takes the higher hop. With the wave off, the line stays on the ground.
 - Each take-off is also kept as a hop marker at its point on the path, dropped once the last follower has passed it. With `Render.JumpHopAtSpot` on (off since 2026-11-08), a follower also hops as it passes a marker.
 **Server**
@@ -1093,6 +1094,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Developer's call: the jump wave much higher, `JumpWaveHeight` 1.5 → 4.0 studs (a little above the 3.5-stud marker hop, about half the leader's own jump) | Developer | Tunable |
 | 2026-11-08 | Developer's call: a jump during a wave no longer cuts the wave off. Each jump on the spot starts its own wave and several run down the line at once (at most `JumpWaveMax`, 16, per line; past that the oldest stops). Where two meet at one follower it takes the higher hop, not the sum, so no follower goes above one wave's height | Developer | Final unless changed |
 | 2026-11-08 | Developer's call: every jump, walking or standing, sends the hop wave down the line; followers no longer hop at the take-off spot as they pass it ("little bumps in the line"). This replaces 4.3's "the line hops at the same spot". The marker hops stay in the code behind `Render.JumpHopAtSpot` (off); `JumpWaveStill` is gone. M3 check 7 reworded | Developer | Final unless changed |
+| 2026-11-08 | Bug fix (developer's playtest): jumping over a pen fence made the whole line lurch forward about 3 studs twice, because the fence's height (up and down) was added to the path in a frame or two. Height-added length now goes into a lag the followers catch up at `LagCatchUp` 10 studs a second (up to `LagMax` 20); they still climb over the fence. The server records at 15 Hz and the client every frame, so they catch different amounts of a fence's height: after a fence jump the two disagree by up to about 1.5 studs behind it (30-follower line). Add it to the C01-M5 cut-radius note | C01-M3 | Tunable |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1121,4 +1123,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.15 (2026-11-08): the jump wave raised to 4.0 studs at the developer's request (16).
 - 0.16 (2026-11-08): several jump waves can run down a line at once, at the developer's request (9.5, 16); `Config.Line.Render.JumpWaveMax` added.
 - 0.17 (2026-11-08): every jump sends the hop wave down the line, walking or standing; hops at the take-off spot switched off (`Render.JumpHopAtSpot`). Matching changes to 4.3, 9.5, M3 check 7 and 16.
+- 0.18 (2026-11-08): bug fix, no more lurch when jumping over a pen fence: height-added path length is caught up gradually (9.5, 16).
  

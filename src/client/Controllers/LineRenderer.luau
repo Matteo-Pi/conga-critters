@@ -404,7 +404,7 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 	end
 	local head = Path.LiveHead(path, root, view.Humanoid)
 	Path.Sample(path, head, view.Offsets, count, samplePos, sampleDir)
-	local headDist = Path.HeadDistance(path, head)
+	local headDist = Path.FollowDistance(path, head)
 	local pathOffsets = view.Offsets
 	local hopDist = path.HopDist
 	local hopAt = path.HopAt
