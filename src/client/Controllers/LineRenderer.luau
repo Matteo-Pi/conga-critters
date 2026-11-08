@@ -12,10 +12,10 @@
 --     ClientFx/Lines (a client-only folder that aim rays already skip);
 --   * every follower moved with one workspace:BulkMoveTo per frame (FireCFrameChanged);
 --   * hop = |sin(t·ω + i·φ)| × h, scaled down while the leader stands still, plus a small side-to-side waddle;
---   * paths stay at ground height (Path.Locate); a follower passing a hop marker (where the leader took off) plays
---     a JumpHopHeight hop over JumpHopSeconds; a jump on the spot leaves the line on the ground (or, with
---     Render.JumpWave on, sends a hop down it; each jump starts its own wave, so several can run down the line at
---     once, and a follower reached by two at the same moment takes the higher hop, not the sum);
+--   * paths stay at ground height (Path.Locate); every jump, walking or standing, sends a hop wave down the line
+--     (Render.JumpWave); each jump starts its own wave, so several can run down the line at once, and a follower
+--     reached by two at the same moment takes the higher hop, not the sum. With Render.JumpHopAtSpot on (off by
+--     default), followers also hop as they pass the take-off point (a hop marker);
 --   * smoothing takes out sudden jumps in a follower's target (a delivery moving the line up, a snapshot) over about
 --     3 / Smoothing s, so followers trace the path exactly while walking; jumps beyond SnapDistance snap;
 --   * level of detail by distance from the local character: hop, waddle, colour cycling (and later particles)
@@ -481,7 +481,7 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		-- line that stops mid-hop still lands.
 		local pathDist = headDist - pathOffsets[i]
 		local previousDist = follower.PathDist
-		if markers > 0 and previousDist then
+		if markers > 0 and previousDist and Render.JumpHopAtSpot then
 			for k = 1, markers do
 				local marker = hopDist[k]
 				if previousDist < marker and marker <= pathDist then
@@ -625,7 +625,7 @@ local function record(dt: number)
 				follower.GlideFrom = nil
 				follower.PathDist = nil
 			end
-		elseif tookOff and Render.JumpWave and view.Moving < Render.JumpWaveStill then
+		elseif tookOff and Render.JumpWave then
 			table.insert(view.Waves, os.clock())
 			if #view.Waves > Render.JumpWaveMax then
 				table.remove(view.Waves, 1)

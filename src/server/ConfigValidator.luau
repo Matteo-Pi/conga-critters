@@ -195,9 +195,6 @@ function ConfigValidator.Collect(live: boolean): { string }
 	if line.Render.IdleHop < 0 or line.Render.IdleHop > 1 then
 		table.insert(problems, "Line: Render.IdleHop must be 0 to 1")
 	end
-	if line.Render.JumpWaveStill > 1 then
-		table.insert(problems, "Line: Render.JumpWaveStill must be 0 to 1")
-	end
 	if line.Path.AirborneGap >= line.Path.FloorProbe then
 		table.insert(problems, "Line: Path.AirborneGap must be below FloorProbe")
 	end

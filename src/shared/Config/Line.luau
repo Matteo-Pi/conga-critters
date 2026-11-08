@@ -61,15 +61,16 @@ local Line: Types.LineConfig = {
 		MaxDrawnPhone = 350,
 		ClaimSeconds = 1.0,
 		JoinHopHeight = 2.5,
-		-- A follower passing a hop marker (the leader's take-off point) hops this high, for this long.
-		JumpHopHeight = 3.5,
-		JumpHopSeconds = 0.5,
-		-- A jump on the spot (leader's Moving below JumpWaveStill) sends a hop down the line, JumpWaveDelay seconds per
-		-- follower (on since 2026-11-08, the developer's call: it engages players). Off, the line stays on the ground.
+		-- Every jump (walking or standing) sends a hop wave down the line, front to back, JumpWaveDelay seconds per
+		-- follower: the developer's call on 2026-11-08 (it engages players). Each wave hop lasts JumpHopSeconds.
 		JumpWave = true,
 		JumpWaveHeight = 4.0,
 		JumpWaveDelay = 0.03,
-		JumpWaveStill = 0.3,
+		-- Off since 2026-11-08 (the developer's call): followers also hop where the leader took off, as they pass that
+		-- spot (spec 4.3 as first written), JumpHopHeight high.
+		JumpHopAtSpot = false,
+		JumpHopHeight = 3.5,
+		JumpHopSeconds = 0.5,
 		JumpWaveMax = 16, -- waves running down one line at once (a 300-line wave lasts about 9 s; jumps are ~1 s apart)
 	},
 	Banners = { 100, 200, 300 },

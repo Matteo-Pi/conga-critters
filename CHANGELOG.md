@@ -61,3 +61,4 @@ One line per milestone or build day; the commit message holds the playtest evide
 - Tuning (developer's request): jump hops 3.5 studs over 0.5 s (were 2.0 over 0.4), and the jump wave on at 1.5 studs (was off, 0.8).
 - Tuning (developer's request): the jump wave raised to 4.0 studs (was 1.5).
 - Developer's request: jumping during a wave no longer cuts it off; each jump starts its own wave, up to `JumpWaveMax` (16) per line at once, and overlapping waves take the higher hop, not the sum.
+- Developer's request: every jump, walking or standing, sends the hop wave down the line; hops at the take-off spot are off (`Render.JumpHopAtSpot`), `JumpWaveStill` removed. Spec 4.3, 9.5 and M3 check 7 updated.

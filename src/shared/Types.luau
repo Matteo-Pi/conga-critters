@@ -130,12 +130,12 @@ export type LineRenderConfig = {
 	MaxDrawnPhone: number,
 	ClaimSeconds: number, -- a critter that has eaten waits this long (plus ping) for its line to claim it
 	JoinHopHeight: number, -- studs: the arc of a joining critter's hop from its bait into the line
+	JumpHopAtSpot: boolean, -- followers also hop as they pass a hop marker (the leader's take-off point)
 	JumpHopHeight: number, -- studs: a follower's hop as it passes a hop marker
 	JumpHopSeconds: number,
-	JumpWave: boolean, -- a jump on the spot sends a hop wave down the line
+	JumpWave: boolean, -- every jump sends a hop wave down the line
 	JumpWaveHeight: number,
 	JumpWaveDelay: number, -- seconds between neighbours in the wave
-	JumpWaveStill: number, -- the leader counts as standing still below this Moving factor (0–1)
 	JumpWaveMax: number, -- most waves running down one line at once; a new one past this drops the oldest
 }
 
