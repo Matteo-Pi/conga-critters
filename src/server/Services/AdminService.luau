@@ -21,8 +21,10 @@ local Odds = require(Shared:WaitForChild("Odds") :: ModuleScript)
 local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript)
 
 local Services = script.Parent
+local LineService = require(Services:WaitForChild("LineService") :: ModuleScript)
 local MapService = require(Services:WaitForChild("MapService") :: ModuleScript)
 local PlayerStateService = require(Services:WaitForChild("PlayerStateService") :: ModuleScript)
+local ThrowService = require(Services:WaitForChild("ThrowService") :: ModuleScript)
 
 local Checks = script.Parent.Parent:WaitForChild("Checks")
 
@@ -287,7 +289,112 @@ register("unlocked", "unlocked [player]", "each biome's lock state, LP and GateL
 	return unlockedReport(player)
 end)
 
-later("fill", "fill <player|me> <n>", "fill a line to n critters", "C01-M3")
+local function lineReport(player: Player): string
+	local session = PlayerStateService.Get(player)
+	local tutorial = if session
+		then `tutorial {if session.Tutorial.Done then "done" else "running"}, free throws {session.Tutorial.FreeThrows}`
+		else "no session"
+	return string.format(
+		"%s: line %d/%d, %d on the way, room %d; Leash level %d; Golden Bait %d; %s",
+		player.Name,
+		LineService.Length(player),
+		LineService.Capacity(player),
+		LineService.Incoming(player),
+		LineService.Room(player),
+		if session then session.Upgrades.Leash else 0,
+		if session then session.GoldenBait else 0,
+		tutorial
+	)
+end
+
+register("throws", "throws [reset]", "accepted and rejected throws, by reason", function(_caller, args)
+	local report = ThrowService.Report()
+	if args[1] and string.lower(args[1]) == "reset" then
+		ThrowService.ResetStats()
+		return report .. "\n(counters reset)"
+	end
+	return report
+end)
+
+register("line", "line [player]", "line length, critters on the way, capacity", function(caller, args)
+	local player, err = findPlayer(caller, args[1])
+	if not player then
+		return `line: {err}`
+	end
+	return lineReport(player)
+end)
+
+-- Followers draw from C01-M3; until then `fill` sets the server line only (enough for the leash-full check).
+register("fill", "fill <player|me> <n>", "fill a line to n critters (capped at capacity)", function(caller, args)
+	local player, err = findPlayer(caller, args[1])
+	if not player then
+		return `fill: {err}`
+	end
+	local n = tonumber(args[2])
+	if not n or n ~= n or n < 0 then
+		return "fill: n must be a number of 0 or more"
+	end
+	local rng = Random.new()
+	LineService.Fill(player, n, function()
+		local result = Odds.Roll("meadow", Odds.DefaultContext(), rng)
+		assert(result, "meadow has no critters")
+		return { Species = result.Species, Variant = result.Variant, Bound = false, Paid = false }
+	end)
+	return lineReport(player)
+end)
+
+register("leash", "leash <player|me> <level>", "set the Leash level (upgrades arrive in C01-M4)", function(caller, args)
+	local player, err = findPlayer(caller, args[1])
+	if not player then
+		return `leash: {err}`
+	end
+	local level = tonumber(args[2])
+	if not level or level ~= level then
+		return `leash: level must be 1 to {#Config.Upgrades.Tracks.Leash.Levels}`
+	end
+	LineService.SetLeashLevel(player, level)
+	return lineReport(player)
+end)
+
+register("golden", "golden <player|me> <n>", "set the Golden Bait count", function(caller, args)
+	local player, err = findPlayer(caller, args[1])
+	if not player then
+		return `golden: {err}`
+	end
+	local n = tonumber(args[2])
+	if not n or n ~= n or n < 0 or n == math.huge then
+		return "golden: n must be a number of 0 or more"
+	end
+	PlayerStateService.SetGoldenBait(player, n)
+	return lineReport(player)
+end)
+
+register(
+	"tutorial",
+	"tutorial <player|me> <reset|done>",
+	"restart or end the tutorial's fixed rolls",
+	function(caller, args)
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `tutorial: {err}`
+		end
+		local session = PlayerStateService.Get(player)
+		if not session then
+			return "tutorial: no session"
+		end
+		local what = string.lower(args[2] or "")
+		if what == "reset" then
+			session.Tutorial.Done = false
+			session.Tutorial.FreeThrows = 0
+		elseif what == "done" then
+			session.Tutorial.Done = true
+		else
+			return "tutorial: reset or done"
+		end
+		return lineReport(player)
+	end
+)
+
 later("leaders", "leaders <k>", "spawn k debug leaders with full lines", "C01-M3")
 later("coins", "coins <player|me> <amount>", "give coins", "C01-M4")
 later("storage", "storage <player|me> [n|full]", "fill storage", "C01-M4")

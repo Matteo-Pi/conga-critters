@@ -146,6 +146,41 @@ function ConfigValidator.Collect(live: boolean): { string }
 		end
 	end
 
+	-- Throwing
+	local throw = Config.Throw
+	for _, key in
+		{
+			"Range",
+			"Cooldown",
+			"CrittersPerThrow",
+			"RateLimitBurst",
+			"JoinDelay",
+			"RunInSeconds",
+			"EatSeconds",
+			"HopSeconds",
+			"FlightSeconds",
+			"ZonePollHz",
+		}
+	do
+		if not positive((throw :: any)[key]) then
+			table.insert(problems, `Throw: {key} must be positive`)
+		end
+	end
+	if throw.RateLimitSlack < 0 or throw.RateLimitSlack >= throw.Cooldown then
+		table.insert(problems, "Throw: RateLimitSlack must be at least 0 and below Cooldown")
+	end
+	if throw.RunInSeconds + throw.EatSeconds > throw.JoinDelay then
+		table.insert(problems, "Throw: RunInSeconds + EatSeconds must fit inside JoinDelay")
+	end
+	if throw.FallbackSpawnMin > throw.FallbackSpawnMax then
+		table.insert(problems, "Throw: FallbackSpawnMin must be at most FallbackSpawnMax")
+	end
+	for _, fixed in Config.Tutorial.FixedRolls do
+		if not Config.Rarities.ById[fixed.Rarity] then
+			table.insert(problems, `Tutorial: fixed roll on throw {fixed.Throw} has unknown rarity {fixed.Rarity}`)
+		end
+	end
+
 	-- Events
 	local eventIds: { string } = {}
 	for _, event in Config.Events.List do

@@ -105,13 +105,19 @@ export type ThrowConfig = {
 	Cooldown: number,
 	CrittersPerThrow: number,
 	RateLimitSlack: number,
+	RateLimitBurst: number,
 	TargetRangeSlack: number,
 	JoinDelay: number,
 	RunInSeconds: number,
 	EatSeconds: number,
+	HopSeconds: number,
 	BurrowSearchRadius: number,
 	FallbackSpawnMin: number,
 	FallbackSpawnMax: number,
+	FlightSeconds: number,
+	ArcHeight: number,
+	RejectGraceSeconds: number,
+	ZonePollHz: number,
 }
 
 export type DeliveryConfig = {
@@ -332,6 +338,7 @@ export type AdminConfig = {
 
 export type DebugConfig = {
 	LogBoot: boolean,
+	LogThrows: boolean,
 	ChatCommand: string,
 	ChatCommandShort: string,
 	StudioBridgeName: string,

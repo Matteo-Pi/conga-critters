@@ -8,6 +8,7 @@ local deepFreeze = require(script.Parent.Parent.Util.DeepFreeze)
 
 local Debug: Types.DebugConfig = {
 	LogBoot = true, -- print each service's and controller's Init and Start
+	LogThrows = true, -- print every accepted and rejected throw (server) and each critter's arrival timings (client)
 	ChatCommand = "/debug", -- TextChatCommand.PrimaryAlias
 	ChatCommandShort = "/d", -- TextChatCommand.SecondaryAlias
 	StudioBridgeName = "DebugBridge", -- BindableFunction under ServerScriptService, Studio only

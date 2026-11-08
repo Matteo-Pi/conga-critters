@@ -36,3 +36,5 @@ A Roblox game (ages 9–15, phones first), built with Rojo 7.7.1, Git and Roblox
 
 ## Known noise
 Playtests log `ContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type` three times at boot. Nothing in the place references that asset, so it comes from Roblox's own scripts, not ours (it was once blamed on the Baseplate, wrongly). Ignore it.
+
+While MCP's `user_mouse_input` runs, the console fills with `Unknown action nil` (about 10 lines per click). It comes from the tool, not our code. Ignore it too. The tool's x/y are GUI coordinates: `UserInputService:GetMouseLocation()` reads them 58 px lower, because it includes the top bar.

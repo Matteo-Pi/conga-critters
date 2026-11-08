@@ -1,9 +1,9 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.9
+spec_version: 0.10
 date: 2026-11-08
-status: "C01-M1 done: Config validator, Odds, zone classification, pen assignment, unlock rule, debug commands. C01-M2 next."
+status: "C01-M2 done: throwing, server checks and rolls, arrival animations, tutorial fixed rolls. C01-M3 next."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
   - "/docs/economy.md (v0.4): every tuning number, and the simulation behind them"
@@ -1061,6 +1061,14 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Pushing players out of locked gates and other players' pens (3.1) waits for C01-M4, which tests it (check 5). Returning players spawning at their pen also waits for M4's saved data; until then everyone spawns at FirstSpawn | C01-M1 | Do in C01-M4 |
 | 2026-11-08 | Pens go to the lowest free plot (1–8); a rejoining player gets whichever pen is free then, not necessarily their old one (10.2 M1 check 3) | C01-M1 | Final unless changed |
 | 2026-11-08 | The validator's "live product ids aren't zero" applies to P0 passes and products only, so P1/P2 entries can stay at 0 until they're made | C01-M1 | Final unless changed |
+| 2026-11-08 | THROW is shown on every device, not only phones, because it is also the leash-full and hub indicator (4.1). PC left click and the console right trigger also throw. Two Bool actions in one `PlayContext`: `ThrowForward` (the button's `UIButton` binding and `ButtonR2`, along the camera to full range) and `ThrowPointer` (`MouseLeftButton`, keyboard and mouse only, at the mouse point; clicks on our own buttons are ignored) | C01-M2 | Revisit in the UI pass (Sun 15 Nov) |
+| 2026-11-08 | `ThrowBait` gets no reply (9.4), so the client shows a rejection by puffing any bait that no `CritterSpawned` matched within `RejectGraceSeconds` (0.4) plus twice the ping after it landed | C01-M2 | Final unless changed |
+| 2026-11-08 | The server times a bait's landing as its arrival time + `FlightSeconds` − ping, and joins the critter `JoinDelay` later. New `Config/Throw` feel numbers: `FlightSeconds` 0.45, `ArcHeight` 7, `HopSeconds` 0.4, `RejectGraceSeconds` 0.4, `ZonePollHz` 10 | C01-M2 | Tunable |
+| 2026-11-08 | `ThrowBait`'s rate limit is a token bucket refilling 1 per (cooldown − 0.1 s) and holding `RateLimitBurst` (3); separately, the server accepts a throw only (cooldown − 0.1 s) after the player's last accepted one. Rejections are counted by reason (`payload`, `rate`, `cooldown`, `noCharacter`, `notInBiome`, `locked`, `range`, `targetBiome`, `full`, `noGoldenBait`) | C01-M2 | Final unless changed |
+| 2026-11-08 | The client pulls a landing point back towards the player until it is on the floor of the biome they stand in, so a throw at a wall lands at the wall. Depth-band luck uses the band where the bait lands | C01-M2 | Final unless changed |
+| 2026-11-08 | Tutorial fixed rolls count accepted free throws only (Golden Bait throws never count or get one). The rarity is fixed; the species is an equal pick among that biome's species of that rarity, and the variant is rolled as usual. Kept in session state until C01-M4 saves tutorial progress | C01-M2 | Final unless changed |
+| 2026-11-08 | Until C01-M3's follower chain, a critter that joins hops to the player's back and vanishes. Deferred: the "NEW!" toast to C01-M7 (Index), the leash-full home arrow to C01-M4 (pens and delivery), the ×1.25 Conga badge to C01-M3's HUD | C01-M2 | Do in the named milestones |
+| 2026-11-08 | Debug commands added: `throws [reset]`, `line`, `leash`, `golden`, `tutorial`, and `fill` (the server line only until C01-M3 draws followers) | C01-M2 | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1081,4 +1089,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.7 (2026-11-07): the developer settled all 13 "Developer to confirm" decisions (16); 11 stand as written. Two changes: an auto-release on/off switch ships at the soft launch in the Manage Pen menu (4.5.6, 4.5.8; `SetPenSettings` gains `autoRelease`, 9.4), and the default filter releases Rare or lower, Normal only, keeping Golden critters (`IncludeGolden` defaults to false, 9.6). Matching M4 check 8 and M7 check 9, an analytics event for the switch, Update 1's list, a new risk row, and the day-14 review items in 14.
 - 0.8 (2026-11-08): build day 1. The repo skeleton (Rojo, services and controllers booting in order) and `src/shared/Config` filled from economy.md, with `Config/Camera` added. The greybox map in the place file: 8 pens round a hexagonal hub, 6 gates in tier order clockwise (Meadow, Jungle, Peaks, Tier 4, Tier 5, event biomes), each a 60 × 50 archway, and cone biomes 110 wide at the entrance to 350 at 400 deep, with walls taller than the camera zoom limit. `Zones.Contains` tests box and trapezoid zones. Server Authority is on. Matching changes to 2.1, 3.1, 3.2, 4.10 (Critter Rush defaults to 30 minutes), 9.2, 10.1 (art pass on Sun 15 Nov) and 16.
 - 0.9 (2026-11-08): C01-M1. 9.2's layout gains `Unlocks.luau`, `ConfigValidator.luau` and `Checks/`. Section 16 logs placeholder critter models, the debug command routes (chat `TextChatCommand` and a Studio bridge, to merge with 4.10's `AdminCommand` in M8), the shared unlock rule with session LP, gate and pen access moved to M4, pen assignment, and the P0-only zero-id check.
+- 0.10 (2026-11-08): C01-M2. Throwing and arrival built (4.1, 4.2). Section 16 logs THROW on every device and the two input actions, rejection shown by an unmatched bait, landing timing and the new `Config/Throw` feel numbers, the rate limit and cooldown with rejection reasons, landing points pulled into the biome, how fixed tutorial rolls count, the stand-in join animation and deferred cues, and the new debug commands.
  
