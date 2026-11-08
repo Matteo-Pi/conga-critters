@@ -62,7 +62,10 @@ local Line: Types.LineConfig = {
 		HideDistance = 200,
 		HideDistancePhone = 150,
 		MaxDrawn = 900,
-		MaxDrawnPhone = 350,
+		-- Phone cap lifted for the real-phone performance test (developer, 2026-11-08): 4,000 is more than 13 lines of 300
+		-- (12 debug leaders and the player's own), so only HideDistancePhone and FarUpdateEvery limit phones. Set a
+		-- real cap from the phone numbers before launch (spec 16).
+		MaxDrawnPhone = 4000,
 		ClaimSeconds = 1.0,
 		JoinHopHeight = 2.5,
 		-- Every jump (walking or standing) sends a hop wave down the line, front to back, JumpWaveDelay seconds per

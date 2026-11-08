@@ -332,10 +332,41 @@ register("line", "line [player]", "line length, critters on the way, capacity", 
 	return lineReport(player)
 end)
 
+-- Debug: raise the Leash level, then the Longer Leash pass, to the lowest setting whose capacity holds n (never
+-- lowers anything). Returns what changed, or "" when the line already holds n. Capped at MaxCapacity.
+local function raiseCapacity(player: Player, n: number): string
+	local session = PlayerStateService.Get(player)
+	if not session or LineService.Capacity(player) >= n then
+		return ""
+	end
+	local want = math.min(n, Config.Line.MaxCapacity)
+	local levels = #Config.Upgrades.Tracks.Leash.Levels
+	local function lowestLevel(longer: boolean): number?
+		for level = session.Upgrades.Leash, levels do
+			if LineService.CapacityFor(level, session.Rebirths, longer) >= want then
+				return level
+			end
+		end
+		return nil
+	end
+	local level = lowestLevel(session.LongerLeash)
+	local pass = false
+	if not level and not session.LongerLeash then
+		level = lowestLevel(true)
+		pass = true
+	end
+	local target = level or levels
+	if pass then
+		LineService.SetLongerLeash(player, true)
+	end
+	LineService.SetLeashLevel(player, target)
+	return `fill: raised Leash to level {target}{if pass then " and turned Longer Leash on" else ""}; capacity {LineService.Capacity(player)}`
+end
+
 register(
 	"fill",
 	"fill <player|me> <n> [biome]",
-	"fill a line to n critters (capped at capacity)",
+	"fill a line to n critters; raises Leash (then Longer Leash) to the lowest setting that holds n",
 	function(caller, args)
 		local player, err = findPlayer(caller, args[1])
 		if not player then
@@ -349,13 +380,14 @@ register(
 		if not Config.Biomes.ById[biomeId] then
 			return `fill: biome must be one of {biomeList()}`
 		end
+		local raised = raiseCapacity(player, math.floor(n))
 		local rng = Random.new()
 		LineService.Fill(player, n, function()
 			local result = Odds.Roll(biomeId, Odds.DefaultContext(), rng)
 			assert(result, `{biomeId} has no critters`)
 			return { Species = result.Species, Variant = result.Variant, Bound = false, Paid = false }
 		end)
-		return lineReport(player)
+		return if raised ~= "" then `{raised}\n{lineReport(player)}` else lineReport(player)
 	end
 )
 
@@ -405,18 +437,27 @@ register(
 
 register(
 	"leaders",
-	"leaders <k> [biome]",
-	"spawn or remove debug leaders until there are k, each with a full line",
+	"leaders <k> [length] [biome]",
+	"spawn or remove debug leaders until there are k, each with a line of length (default: the last used, at first the max)",
 	function(_caller, args)
 		local k = tonumber(args[1])
 		if not k or k ~= k or k < 0 then
 			return `leaders: k must be 0 to {Config.Debug.MaxLeaders}`
 		end
-		local biomeId = args[2]
+		local length: number? = nil
+		local biomeArg = 2
+		if args[2] and tonumber(args[2]) then
+			length = tonumber(args[2])
+			biomeArg = 3
+			if length ~= length or (length :: number) < 0 then
+				return `leaders: length must be 0 to {Config.Line.MaxCapacity}`
+			end
+		end
+		local biomeId = args[biomeArg]
 		if biomeId and not Config.Biomes.ById[biomeId] then
 			return `leaders: biome must be one of {biomeList()}`
 		end
-		local count = DebugLeaders.Set(k, biomeId)
+		local count = DebugLeaders.Set(k, biomeId, length)
 		local lengths: { string } = {}
 		for ownerId, length in LineService.Lines() do
 			table.insert(lengths, `{ownerId}: {length}`)

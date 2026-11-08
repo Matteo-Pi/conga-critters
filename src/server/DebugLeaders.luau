@@ -1,6 +1,7 @@
 --!strict
 -- DebugLeaders: dummy characters that walk random paths with full lines, owned by negative ids (spec 9.10), for
--- performance tests (C01-M3 check 4). Not a service: AdminService's `leaders <k>` command drives it.
+-- performance tests (C01-M3 check 4). Not a service: AdminService's `leaders <k> [length]` command drives it.
+-- Lines are MaxCapacity long unless a length is given; a new length respawns every leader at that length.
 --
 -- Each leader is a default R15 model named `DebugLeader_<n>` in `Workspace.DebugLeaders` (names from Config.Debug;
 -- attribute `LeaderId` = −n). Clients find a leader's model by that name. It walks to random points inside one biome with server-side
@@ -30,6 +31,7 @@ export type Leader = {
 
 local FOLDER_NAME = Config.Debug.LeadersFolderName
 local leaders: { Leader } = {}
+local leaderLength = Config.Line.MaxCapacity
 local rng = Random.new()
 
 local function folder(): Folder
@@ -133,7 +135,7 @@ local function spawnLeader(id: number, biomeId: string): Leader?
 	model:PivotTo(CFrame.new(start + Vector3.new(0, 3, 0)))
 	model.Parent = folder()
 	local leader: Leader = { Id = id, Model = model, Alive = true }
-	LineService.AddLeader(id, model, makeEntries(biomeId, Config.Line.MaxCapacity))
+	LineService.AddLeader(id, model, makeEntries(biomeId, leaderLength))
 	task.spawn(wander, leader, biomeId)
 	return leader
 end
@@ -148,10 +150,21 @@ function DebugLeaders.Count(): number
 	return #leaders
 end
 
--- Spawn or remove leaders until there are `k`, in `biomeId` (the Meadow by default). Returns how many there are.
-function DebugLeaders.Set(k: number, biomeId: string?): number
+-- Spawn or remove leaders until there are `k`, in `biomeId` (the Meadow by default), each with a line of `length`
+-- (0 to MaxCapacity; the last length used, MaxCapacity at first). A new length respawns them all. Returns how many
+-- there are.
+function DebugLeaders.Set(k: number, biomeId: string?, length: number?): number
 	local biome = biomeId or Config.Biomes.List[1].Id
 	local target = math.clamp(math.floor(k), 0, Config.Debug.MaxLeaders)
+	if length then
+		local wanted = math.clamp(math.floor(length), 0, Config.Line.MaxCapacity)
+		if wanted ~= leaderLength then
+			leaderLength = wanted
+			while #leaders > 0 do
+				removeLeader(table.remove(leaders) :: Leader)
+			end
+		end
+	end
 	while #leaders > target do
 		removeLeader(table.remove(leaders) :: Leader)
 	end

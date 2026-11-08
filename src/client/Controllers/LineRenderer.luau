@@ -20,7 +20,7 @@
 --     3 / Smoothing s, so followers trace the path exactly while walking; jumps beyond SnapDistance snap;
 --   * level of detail by distance from the local character: hop, waddle, colour cycling (and later particles)
 --     within 80 studs; beyond that, flat and moved every FarUpdateEvery frames, and only when it has moved; hidden
---     beyond 200 (150 on phones); at most 900 drawn (350 on phones), own line first, then the nearest lines;
+--     beyond 200 (150 on phones); at most 900 drawn (phones: MaxDrawnPhone, lifted for the phone test), own line first, then the nearest lines;
 --   * a joining critter hops from its bait (CritterFx.ClaimArrival) into its place;
 --   * a leader that streams out hides its line; its path starts again when it streams back in.
 

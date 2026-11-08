@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.20
+spec_version: 0.21
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -720,7 +720,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - Moves every visible follower with one `workspace:BulkMoveTo` call per frame (`Enum.BulkMoveMode.FireCFrameChanged`).
 - Hop: height = |sin(t·ω + i·φ)| × h, plus a small side-to-side waddle, smoothed towards the target.
 - Level of detail: full detail within 80 studs; no particles from 80 to 200 studs; hidden beyond 200 studs (150 on phones).
-- Draws at most 350 followers on phones and 900 elsewhere: your own line first, then the nearest.
+- Draws at most 900 followers on desktop: your own line first, then the nearest. On phones the cap is lifted for the real-phone test (`MaxDrawnPhone` 4,000, more than 13 lines of 300), so only the distance level of detail limits them; a real phone cap is set from the test's numbers before launch (16).
 - Transitions: a joining critter starts at its bait; stolen critters glide from where they were to their new places (0.5 s); delivered critters pop at the pen.
 - If a leader streams out, hide their line. When they stream back in, start their path again.
 ### 9.6 Saved data
@@ -1108,6 +1108,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Risks (15): a slow path to the Kids and Select threshold, 250 unique plays by highly engaged, age-checked players within 60 days. The developer's brief said 500; Roblox's docs say 250, so the spec uses 250. The GTA VI row now notes that the first players are 16+ | Developer | Proposed |
 | 2026-11-08 | Launch ads use Ads Manager's Engagement goal instead of "Sponsored ads", same $20–40 budget (10.1, 12). It reaches only the age-checked, highly engaged players who count towards the threshold, at a higher cost per play, and must be paused by hand at the threshold. The later ad spend in 14 (£50–100, then £100–150) keeps its wording until the developer chooses its goal | Developer | Proposed |
 | 2026-11-08 | Bug fix (developer's playtest): two characters that ran into each other stepped up onto each other in turn and climbed high into the air. Characters (players and debug leaders) no longer collide with each other: every character part goes in a `Characters` collision group that doesn't collide with itself (`src/server/CharacterCollision.luau`). They still collide with the map. Nobody can body-block another player either (pillar: fair to young players) | C01-M3 | Final unless changed |
+| 2026-11-08 | Developer's call: phones have no follower cap for the real-phone test (`Render.MaxDrawnPhone` 350 → 4,000); the distance level of detail stays (hidden beyond 150 studs on phones, far followers moved every second frame). Set a real cap from the test's numbers before launch (9.5). Debug: `leaders <k> [length] [biome]` sets the leaders' line length (a new length respawns them), and `fill` raises Leash, then Longer Leash, to the lowest setting that holds n instead of silently capping | Developer | Tunable |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1142,4 +1143,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.18 (2026-11-08): bug fix, no more lurch when jumping over a pen fence: height-added path length is caught up gradually (9.5, 16).
 - 0.19 (2026-11-08): Roblox's Kids and Select publishing rules read (17). Proposed, logged in 16: the all-ages publishing requirements in the launch checklist (12), the soft launch reaching 16+ only at first (10.1), early go/kill numbers from 16+ players (13), a risk row for the 250-play evaluation threshold and a GTA VI note (15), and launch ads with the Engagement goal (10.1, 12). M3 check 4 gains a 20 s jump-wave run (10.2).
 - 0.20 (2026-11-08): bug fix, characters no longer collide with each other, so two can't climb each other (16).
+- 0.21 (2026-11-08): phone follower cap lifted for the real-phone test (9.5, 16); `leaders` takes a length and `fill` raises capacity to fit (16).
  
