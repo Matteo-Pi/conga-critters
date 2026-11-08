@@ -18,6 +18,7 @@ local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript)
 local Services = script.Parent:WaitForChild("Services")
 local LineService = require(Services:WaitForChild("LineService") :: ModuleScript)
 local MapService = require(Services:WaitForChild("MapService") :: ModuleScript)
+local CharacterCollision = require(script.Parent:WaitForChild("CharacterCollision") :: ModuleScript)
 
 local DebugLeaders = {}
 
@@ -128,6 +129,7 @@ local function spawnLeader(id: number, biomeId: string): Leader?
 	if humanoid then
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	end
+	CharacterCollision.Apply(model) -- leaders pass through each other and players (spec 16)
 	model:PivotTo(CFrame.new(start + Vector3.new(0, 3, 0)))
 	model.Parent = folder()
 	local leader: Leader = { Id = id, Model = model, Alive = true }

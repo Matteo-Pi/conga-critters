@@ -15,6 +15,9 @@ require(script:WaitForChild("ConfigValidator") :: ModuleScript).Run()
 -- Camera limits (Config/Camera). Set before any player joins; Player copies these from StarterPlayer on join.
 StarterPlayer.CameraMaxZoomDistance = Config.Camera.CameraMaxZoomDistance
 
+-- Characters don't collide with each other (spec 16). Before any player joins, so no character spawns without it.
+require(script:WaitForChild("CharacterCollision") :: ModuleScript).Start()
+
 -- Boot order: the services table in spec 9.2. Modules not listed here still load, after these, alphabetically.
 local ORDER = {
 	"DataService",
