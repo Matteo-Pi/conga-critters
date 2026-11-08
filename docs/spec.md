@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.13
+spec_version: 0.14
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -708,7 +708,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - Follower i sits behind the leader at the summed spacing of followers 1 to i. Work out every position in one pass along the path, so the cost grows with points plus followers, not points times followers.
 - A jump of more than 25 studs between samples (a respawn, or the server moving a player) resets the path to a straight line behind the leader.
 - Breadcrumbs are at ground height, never in the air: the leader's X and Z with the height of the floor straight below it (a downward raycast into `Workspace.Map`). The leader is airborne when its feet are more than 1.5 studs above that floor, so steps and slopes don't count. A jump on the spot therefore adds no path.
-- Each take-off is kept as a hop marker at its point on the path. A follower plays a hop when it passes a marker (drawn by the client), and the marker is dropped once the last follower has passed it. A jump on the spot leaves the line on the ground; a small hop wave down the line is available behind `Config.Line.Render.JumpWave`, off by default.
+- Each take-off is kept as a hop marker at its point on the path. A follower plays a hop when it passes a marker (drawn by the client), and the marker is dropped once the last follower has passed it. A jump on the spot adds no marker hops; instead a hop wave runs down the line (`Config.Line.Render.JumpWave`, on). With the wave off, the line stays on the ground.
 **Server**
 - Records each leader's position 15 times a second.
 - Checks for cuts 10 times a second (4.4.2). It skips a victim straight away if the cutter is outside the bounding box of the victim's cuttable followers (plus the cut radius), and otherwise tests only those followers.
@@ -865,7 +865,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 3. Walk speed matches the formula at lengths 0, 100, 200 and 300.
 4. On a real mid-range phone, with 6 lines at 300 (debug leaders), the game runs at 45 FPS or more and `LineRenderer` takes 2.5 ms or less (MicroProfiler).
 5. Server Authority decision: if movement feels normal on phone and PC with no new errors, keep it. Otherwise switch to Automatic and log the change (9.1).
-6. Jump on the spot, then stand still: no follower is ever above the ground by more than its hop height.
+6. Jump on the spot, then stand still: no follower is ever above the ground by more than its hop height (the wave's height while the wave passes it), and the line is back on the ground once the wave has passed.
 7. Jump while walking: each follower hops at the marker's spot.
 8. Walking up and down a step or slope still works: followers stay on the floor and no hop marker is made.
 **C01-M4: Income and DataStore** (Thu 12 Nov). Includes the biome cap, placement and storage rules (4.5.3, 4.5.6, 4.5.7).
@@ -1088,6 +1088,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Debug leaders own ids from −1001 down (`Config.Debug.LeaderIdBase`), because Studio test players already use −1, −2, …; clients look a line's owner up as a player first, then as a debug leader. New debug commands `speed`, `longleash`, `leaders`, `goto`, `walk8` (a server-driven figure-of-eight, since MCP's `character_navigation` desyncs under Server Authority) and `linepos`. The developer added their UserId to `Config.Admin.Whitelist` so `leaders` works in live servers for the phone test | C01-M3 | Final unless changed |
 | 2026-11-08 | Client and server follower positions differ slightly when the server drives the local character (`walk8`): the client mispredicts at each turn and the final stop, so on a 300-line figure-of-eight its own line drifted up to 8 studs from the server's by the tail. Another player's line, seen by a second client, matched the server to 0.01 studs along the walked path. Tune the cut radius in C01-M5 with that in mind | C01-M3 | Note for C01-M5 |
 | 2026-11-08 | Bug fix: after a jump, followers froze in mid-air, because breadcrumbs recorded the leader's height during the jump (a jump on the spot made a vertical column of path). `Path.luau` now records ground height only (`Path.Locate`: the floor straight below, from a raycast into `Workspace.Map`; airborne above `AirborneGap` 1.5 studs) and keeps each take-off as a hop marker. On the client, a follower passing a marker plays a `JumpHopHeight` (2.0) hop over `JumpHopSeconds` (0.4), timed from the moment it crossed, so a line that stops mid-hop still lands. The server keeps and drops the same markers but draws nothing. A take-off within `HopMinGap` (1 stud) of the last marker adds none, so repeated jumps on the spot make one marker. Optional hop wave on a jump on the spot behind `Render.JumpWave`, off by default. New M3 checks 6–8 (10.2) | C01-M3 | Tunable |
+| 2026-11-08 | Developer's call after the fix: higher hops and the jump wave on, because it engages players. `JumpHopHeight` 2.0 → 3.5 studs, with `JumpHopSeconds` 0.4 → 0.5 so the higher hop doesn't look twitchy; `JumpWave` on, `JumpWaveHeight` 0.8 → 1.5. The walking hop (`HopHeight` 0.6) is unchanged | Developer | Tunable |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1112,4 +1113,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.11 (2026-11-08): three proposals for the Sun 15 Nov UI/art pass logged in 16, nothing built: a click hint if THROW stays on PC, cover props tagged `Burrow` with a puff for fallback spawns, and decoration-only ambient life with roaming critters revisited at day 14.
 - 0.12 (2026-11-08): C01-M3 (checks 1–3). 9.2's layout gains `LineRules.luau` and `DebugLeaders.luau`. Section 16 logs the shared line rules, Heartbeat path recording, the far level of detail, smoothing and the join hand-off, mesh sizes for the spacing, the line kept on death until M4/M5, debug leader ids and commands, and the client/server position gap to bear in mind for M5.
 - 0.13 (2026-11-08): C01-M3 bug fix. Breadcrumbs are recorded at ground height and jumps become hop markers that each follower hops over (4.3, 9.5); a jump on the spot leaves the line on the ground, with an optional hop wave off by default. New M3 checks 6–8 (10.2); section 16 logs the fix and the developer's admin whitelist entry.
+- 0.14 (2026-11-08): the developer asked for higher hops and the jump wave on: jump hops 3.5 studs over 0.5 s, the wave on at 1.5 studs (9.5, 16); M3 check 6 reworded for the wave.
  

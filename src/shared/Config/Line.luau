@@ -62,12 +62,12 @@ local Line: Types.LineConfig = {
 		ClaimSeconds = 1.0,
 		JoinHopHeight = 2.5,
 		-- A follower passing a hop marker (the leader's take-off point) hops this high, for this long.
-		JumpHopHeight = 2.0,
-		JumpHopSeconds = 0.4,
-		-- A jump on the spot (leader's Moving below JumpWaveStill) leaves the line on the ground; with JumpWave on, a
-		-- small hop runs down the line instead, JumpWaveDelay seconds per follower.
-		JumpWave = false,
-		JumpWaveHeight = 0.8,
+		JumpHopHeight = 3.5,
+		JumpHopSeconds = 0.5,
+		-- A jump on the spot (leader's Moving below JumpWaveStill) sends a hop down the line, JumpWaveDelay seconds per
+		-- follower (on since 2026-11-08, the developer's call: it engages players). Off, the line stays on the ground.
+		JumpWave = true,
+		JumpWaveHeight = 1.5,
 		JumpWaveDelay = 0.03,
 		JumpWaveStill = 0.3,
 	},
