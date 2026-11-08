@@ -7,7 +7,11 @@
 -- the points, so it costs points + followers, not points × followers. A jump longer than ResetJump between two
 -- samples (a respawn, or the server moving the player) resets the path to a straight line behind the leader.
 --
--- Followers walk the leader's exact path, height included, so a jump makes the line hop at the same spot (4.3).
+-- Breadcrumbs are always at ground height, never in the air (4.3). `Locate` gives the leader's feet while it stands
+-- on something, and the floor straight below it (a downward raycast into `workspace.Map`) while it is airborne, so a
+-- jump on the spot adds no path at all and a running jump adds only its ground track. Each take-off is kept as a hop
+-- marker at the path distance (and point) where the leader left the ground: a follower plays a hop as it passes a
+-- marker (the client draws it), and the marker is dropped once the last follower has passed it (`DropPassed`).
 
 local Config = require(script.Parent.Config)
 
@@ -20,6 +24,12 @@ export type Path = {
 	Head: number, -- ring index of the newest point
 	Count: number,
 	Keep: number, -- studs to keep
+	HopDist: { number }, -- hop markers: path distance of each take-off, oldest first
+	HopAt: { Vector3 }, -- … and where it was, on the ground
+	Airborne: boolean, -- the leader was in the air at the last Record
+	GroundDist: number, -- head distance at the last Record on the ground
+	GroundAt: Vector3, -- … and the leader's ground point then
+	FloorY: number, -- height of the ground point at the last Record (the floor below, while airborne)
 }
 
 local INITIAL_SIZE = 64
@@ -37,6 +47,12 @@ function Path.new(keep: number): Path
 		Head = 0,
 		Count = 0,
 		Keep = keep,
+		HopDist = {},
+		HopAt = {},
+		Airborne = false,
+		GroundDist = 0,
+		GroundAt = Vector3.zero,
+		FloorY = 0,
 	}
 end
 
@@ -48,6 +64,74 @@ end
 function Path.GroundPoint(root: BasePart, humanoid: Humanoid?): Vector3
 	local hip = if humanoid then humanoid.HipHeight else 2
 	return root.Position - Vector3.new(0, root.Size.Y / 2 + hip, 0)
+end
+
+-- Floors are everything queryable under workspace.Map (zone parts have CanQuery off) plus terrain. Characters,
+-- critters and effects are never floors.
+local floorParams: RaycastParams? = nil
+local floorMap: Instance? = nil
+
+local function floors(): RaycastParams?
+	local map = workspace:FindFirstChild("Map")
+	if not map then
+		return nil
+	end
+	if floorParams and floorMap == map then
+		return floorParams
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { map, workspace.Terrain }
+	floorParams = params
+	floorMap = map
+	return params
+end
+
+-- The leader's ground point and whether it is airborne. The ground point is always on the floor straight below the
+-- leader (its feet's X and Z, the floor's height), so the bob of a take-off or landing adds no path; the leader is
+-- airborne when its feet are more than AirborneGap above that floor (steps and slopes stay under it). With no floor
+-- in reach (or the map not streamed in) it keeps the height of the path's newest point.
+function Path.Locate(path: Path?, root: BasePart, humanoid: Humanoid?): (Vector3, boolean)
+	local feet = Path.GroundPoint(root, humanoid)
+	local params = floors()
+	local hit = if params
+		then workspace:Raycast(
+			root.Position,
+			Vector3.new(0, feet.Y - root.Position.Y - Config.Line.Path.FloorProbe, 0),
+			params
+		)
+		else nil
+	if hit then
+		return Vector3.new(feet.X, hit.Position.Y, feet.Z), feet.Y - hit.Position.Y > Config.Line.Path.AirborneGap
+	end
+	if path and path.Count > 0 then
+		return Vector3.new(feet.X, path.Points[path.Head].Y, feet.Z), true
+	end
+	return feet, params ~= nil
+end
+
+-- Remove the oldest `drop` hop markers.
+local function shiftHops(path: Path, drop: number)
+	local n = #path.HopDist
+	if drop <= 0 then
+		return
+	end
+	table.move(path.HopDist, drop + 1, n, 1)
+	table.move(path.HopAt, drop + 1, n, 1)
+	for k = n - drop + 1, n do
+		path.HopDist[k] = nil
+		path.HopAt[k] = nil
+	end
+end
+
+-- Hop markers that the path no longer reaches (older than its oldest point) go.
+local function dropHopsBefore(path: Path, distance: number)
+	local hops = path.HopDist
+	local drop = 0
+	while drop < #hops and hops[drop + 1] < distance do
+		drop += 1
+	end
+	shiftHops(path, drop)
 end
 
 local function grow(path: Path)
@@ -76,38 +160,100 @@ local function push(path: Path, point: Vector3, distance: number)
 	path.Dist[path.Head] = distance
 	path.Count += 1
 	-- Drop the oldest point while the one after it still covers Keep studs.
+	local trimmed = false
 	while path.Count > 2 and distance - path.Dist[index(path, path.Count - 2)] >= path.Keep do
 		path.Count -= 1
+		trimmed = true
+	end
+	if trimmed and #path.HopDist > 0 then
+		dropHopsBefore(path, path.Dist[index(path, path.Count - 1)])
 	end
 end
 
--- Start again: a straight line `Keep` studs long running back from `position` along `back`.
+-- Start again: a straight line `Keep` studs long running back from `position` along `back`. Hop markers go.
 function Path.Reset(path: Path, position: Vector3, back: Vector3): ()
 	local flat = Vector3.new(back.X, 0, back.Z)
 	local direction = if flat.Magnitude > 1e-3 then flat.Unit else Vector3.zAxis
 	path.Head = 0
 	path.Count = 0
+	table.clear(path.HopDist)
+	table.clear(path.HopAt)
 	push(path, position + direction * path.Keep, 0)
 	push(path, position, path.Keep)
+	path.GroundDist = path.Keep
+	path.GroundAt = position
 end
 
--- Add the leader's position. Returns true when the path was reset (empty, or a jump longer than ResetJump):
--- callers snap their followers instead of gliding them. `back` points behind the leader, for resets.
-function Path.Record(path: Path, position: Vector3, back: Vector3): boolean
+-- The leader's live ground point between Records, without a raycast: its feet's X and Z at the floor height of the
+-- last Record. Use this as `head` for Sample, Length and HeadDistance.
+function Path.LiveHead(path: Path, root: BasePart, humanoid: Humanoid?): Vector3
+	local feet = Path.GroundPoint(root, humanoid)
+	if path.Count == 0 then
+		return feet
+	end
+	return Vector3.new(feet.X, path.FloorY, feet.Z)
+end
+
+-- Path distance of the leader's live ground position `head` (the newest point's distance plus the way from it).
+function Path.HeadDistance(path: Path, head: Vector3): number
+	if path.Count == 0 then
+		return 0
+	end
+	return path.Dist[path.Head] + (head - path.Points[path.Head]).Magnitude
+end
+
+-- Add the leader's ground point (from `Locate`). Returns (reset, tookOff): reset when the path started again
+-- (empty, or a jump longer than ResetJump), so callers snap their followers instead of gliding them; tookOff when
+-- the leader has just left the ground, which also adds a hop marker where it took off (unless one is within
+-- HopMinGap). `back` points behind the leader, for resets.
+function Path.Record(path: Path, position: Vector3, airborne: boolean, back: Vector3): (boolean, boolean)
+	local reset = false
 	if path.Count == 0 then
 		Path.Reset(path, position, back)
-		return true
+		reset = true
+	else
+		local newest = path.Points[path.Head]
+		local step = (position - newest).Magnitude
+		if step > Config.Line.Path.ResetJump then
+			Path.Reset(path, position, back)
+			reset = true
+		elseif step >= Config.Line.Path.MinStep then
+			push(path, position, path.Dist[path.Head] + step)
+		end
 	end
-	local newest = path.Points[path.Head]
-	local step = (position - newest).Magnitude
-	if step > Config.Line.Path.ResetJump then
-		Path.Reset(path, position, back)
-		return true
+
+	local tookOff = false
+	if airborne then
+		if not path.Airborne and not reset then
+			tookOff = true
+			local hops = path.HopDist
+			local last = hops[#hops]
+			if not last or path.GroundDist - last >= Config.Line.Path.HopMinGap then
+				table.insert(hops, path.GroundDist)
+				table.insert(path.HopAt, path.GroundAt)
+			end
+		end
+	else
+		path.GroundDist = Path.HeadDistance(path, position)
+		path.GroundAt = position
 	end
-	if step >= Config.Line.Path.MinStep then
-		push(path, position, path.Dist[path.Head] + step)
+	path.Airborne = airborne
+	path.FloorY = position.Y
+	return reset, tookOff
+end
+
+-- Drop the hop markers every follower has passed: those at or behind `tailDistance`, the path distance of the last
+-- follower (the head distance minus its offset; the head distance itself for an empty line).
+function Path.DropPassed(path: Path, tailDistance: number): ()
+	local hops = path.HopDist
+	if #hops == 0 or hops[1] > tailDistance then
+		return
 	end
-	return false
+	local drop = 0
+	while drop < #hops and hops[drop + 1] <= tailDistance do
+		drop += 1
+	end
+	shiftHops(path, drop)
 end
 
 -- Studs of path behind the leader's live position `head`.
@@ -115,8 +261,7 @@ function Path.Length(path: Path, head: Vector3): number
 	if path.Count == 0 then
 		return 0
 	end
-	local newest = path.Head
-	return (head - path.Points[newest]).Magnitude + path.Dist[newest] - path.Dist[index(path, path.Count - 1)]
+	return Path.HeadDistance(path, head) - path.Dist[index(path, path.Count - 1)]
 end
 
 -- The newest `n` points, newest first (debug).

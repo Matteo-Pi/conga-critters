@@ -109,6 +109,9 @@ export type LinePathConfig = {
 	KeepExtra: number,
 	ResetJump: number, -- a jump longer than this between samples resets the path
 	ServerSampleHz: number,
+	AirborneGap: number, -- studs: feet higher than this above the floor below = airborne
+	FloorProbe: number, -- studs below the feet to look for a floor
+	HopMinGap: number, -- studs: a take-off this close to the last hop marker adds none
 }
 
 export type LineRenderConfig = {
@@ -127,6 +130,12 @@ export type LineRenderConfig = {
 	MaxDrawnPhone: number,
 	ClaimSeconds: number, -- a critter that has eaten waits this long (plus ping) for its line to claim it
 	JoinHopHeight: number, -- studs: the arc of a joining critter's hop from its bait into the line
+	JumpHopHeight: number, -- studs: a follower's hop as it passes a hop marker
+	JumpHopSeconds: number,
+	JumpWave: boolean, -- a jump on the spot sends a small hop down the line (off by default)
+	JumpWaveHeight: number,
+	JumpWaveDelay: number, -- seconds between neighbours in the wave
+	JumpWaveStill: number, -- the leader counts as standing still below this Moving factor (0–1)
 }
 
 export type ThrowConfig = {

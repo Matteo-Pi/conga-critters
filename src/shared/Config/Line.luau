@@ -38,6 +38,11 @@ local Line: Types.LineConfig = {
 		KeepExtra = 30,
 		ResetJump = 25,
 		ServerSampleHz = 15,
+		-- Ground height only (4.3): the leader is airborne when its feet are more than AirborneGap studs above the
+		-- floor below (steps and slopes stay under it); the floor is looked for up to FloorProbe studs below the feet.
+		AirborneGap = 1.5,
+		FloorProbe = 60,
+		HopMinGap = 1.0, -- a take-off within this many studs of the last hop marker adds none
 	},
 	-- Client drawing (spec 9.5). Hand-tuned in C01-M3.
 	Render = {
@@ -56,6 +61,15 @@ local Line: Types.LineConfig = {
 		MaxDrawnPhone = 350,
 		ClaimSeconds = 1.0,
 		JoinHopHeight = 2.5,
+		-- A follower passing a hop marker (the leader's take-off point) hops this high, for this long.
+		JumpHopHeight = 2.0,
+		JumpHopSeconds = 0.4,
+		-- A jump on the spot (leader's Moving below JumpWaveStill) leaves the line on the ground; with JumpWave on, a
+		-- small hop runs down the line instead, JumpWaveDelay seconds per follower.
+		JumpWave = false,
+		JumpWaveHeight = 0.8,
+		JumpWaveDelay = 0.03,
+		JumpWaveStill = 0.3,
 	},
 	Banners = { 100, 200, 300 },
 }

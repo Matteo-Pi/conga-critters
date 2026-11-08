@@ -515,8 +515,21 @@ register(
 		local out = {
 			`linepos {id}: {count} followers, walk speed {string.format("%.3f", LineService.WalkSpeedOf(id))}`,
 		}
-		local points, studs, newest = LineService.PathInfo(id, 8)
-		table.insert(out, string.format("  server path: %d points, %.2f studs", points, studs))
+		local points, studs, newest, hops = LineService.PathInfo(id, 8)
+		local hopList = {}
+		for _, d in hops do
+			table.insert(hopList, string.format("%.1f", d))
+		end
+		table.insert(
+			out,
+			string.format(
+				"  server path: %d points, %.2f studs; %d hop markers%s",
+				points,
+				studs,
+				#hops,
+				if #hops > 0 then " at " .. table.concat(hopList, ", ") else ""
+			)
+		)
 		for k, p in newest do
 			table.insert(out, string.format("  point %d: (%.2f, %.2f, %.2f)", k - 1, p.X, p.Y, p.Z))
 		end

@@ -12,6 +12,9 @@
 --     ClientFx/Lines (a client-only folder that aim rays already skip);
 --   * every follower moved with one workspace:BulkMoveTo per frame (FireCFrameChanged);
 --   * hop = |sin(t·ω + i·φ)| × h, scaled down while the leader stands still, plus a small side-to-side waddle;
+--   * paths stay at ground height (Path.Locate); a follower passing a hop marker (where the leader took off) plays
+--     a JumpHopHeight hop over JumpHopSeconds; a jump on the spot leaves the line on the ground (or, with
+--     Render.JumpWave on, sends a small hop down it);
 --   * smoothing takes out sudden jumps in a follower's target (a delivery moving the line up, a snapshot) over about
 --     3 / Smoothing s, so followers trace the path exactly while walking; jumps beyond SnapDistance snap;
 --   * level of detail by distance from the local character: hop, waddle, colour cycling (and later particles)
@@ -61,6 +64,8 @@ type Follower = {
 	GlideStart: number,
 	Placed: Vector3?, -- pivot position last sent to BulkMoveTo (far tier skips unchanged moves)
 	PlacedFacing: Vector3,
+	PathDist: number?, -- its path distance last frame, to see it pass a hop marker; nil = not drawn last frame
+	JumpAt: number?, -- when its jump hop started
 }
 
 type View = {
@@ -76,6 +81,7 @@ type View = {
 	LeaderDistance: number,
 	Root: BasePart?,
 	Humanoid: Humanoid?,
+	WaveAt: number?, -- a jump on the spot started a hop wave (Render.JumpWave)
 }
 
 local views: { [number]: View } = {}
@@ -102,6 +108,10 @@ local stats = {
 	MaxMs = 0,
 	LastMs = 0,
 	BulkMs = 0, -- total ms inside BulkMoveTo since the last reset
+	JumpHops = 0, -- followers that passed a hop marker since the last reset
+	HopMissMax = 0, -- studs (flat) between such a follower and its marker's point, at the frame it passed
+	HopMissSum = 0,
+	Events = {} :: { string }, -- take-offs and marker passes since the last reset (first 80), for the checks
 	Drawn = 0,
 	Parts = 0,
 	Window = {} :: { number },
@@ -189,6 +199,8 @@ local function release(follower: Follower)
 	follower.Shown = nil
 	follower.GlideFrom = nil
 	follower.Placed = nil
+	follower.PathDist = nil
+	follower.JumpAt = nil
 	item.Model.Parent = nil
 	local pool = pools[follower.Species]
 	if not pool then
@@ -217,6 +229,8 @@ local function newFollower(packed: number): Follower?
 		GlideStart = 0,
 		Placed = nil,
 		PlacedFacing = Vector3.zero,
+		PathDist = nil,
+		JumpAt = nil,
 	}
 end
 
@@ -245,6 +259,7 @@ local function getView(ownerId: number): View
 		LeaderDistance = math.huge,
 		Root = nil,
 		Humanoid = nil,
+		WaveAt = nil,
 	}
 	views[ownerId] = created
 	return created
@@ -386,8 +401,20 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		view.Dirty = false
 		return 0
 	end
-	local head = Path.GroundPoint(root, view.Humanoid)
+	local head = Path.LiveHead(path, root, view.Humanoid)
 	Path.Sample(path, head, view.Offsets, count, samplePos, sampleDir)
+	local headDist = Path.HeadDistance(path, head)
+	local pathOffsets = view.Offsets
+	local hopDist = path.HopDist
+	local hopAt = path.HopAt
+	local markers = #hopDist
+	local jumpSeconds = Render.JumpHopSeconds
+	local jumpHeight = Render.JumpHopHeight
+	local waveAt = view.WaveAt
+	if waveAt and t - waveAt > count * Render.JumpWaveDelay + jumpSeconds then
+		view.WaveAt = nil
+		waveAt = nil
+	end
 
 	local decay = math.exp(-Render.Smoothing * dt)
 	local hopScale = Render.IdleHop + (1 - Render.IdleHop) * view.Moving
@@ -447,6 +474,58 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		end
 		follower.Shown = shown
 
+		-- Jump hops (4.3): a follower that has just passed a hop marker starts its hop, which plays out in time, so a
+		-- line that stops mid-hop still lands.
+		local pathDist = headDist - pathOffsets[i]
+		local previousDist = follower.PathDist
+		if markers > 0 and previousDist then
+			for k = 1, markers do
+				local marker = hopDist[k]
+				if previousDist < marker and marker <= pathDist then
+					-- Backdated by the overshoot, so the arc starts at the marker even at a low frame rate.
+					follower.JumpAt = t - dt * (pathDist - marker) / (pathDist - previousDist)
+					local miss = Vector3.new(target.X - hopAt[k].X, 0, target.Z - hopAt[k].Z).Magnitude
+					stats.JumpHops += 1
+					stats.HopMissSum += miss
+					stats.HopMissMax = math.max(stats.HopMissMax, miss)
+					if #stats.Events < 80 then
+						table.insert(
+							stats.Events,
+							string.format(
+								"%.2f hop: line %d follower %d at (%.1f, %.1f), marker %.1f at (%.1f, %.1f), miss %.2f",
+								t,
+								view.OwnerId,
+								i,
+								target.X,
+								target.Z,
+								marker,
+								hopAt[k].X,
+								hopAt[k].Z,
+								miss
+							)
+						)
+					end
+					break
+				end
+			end
+		end
+		follower.PathDist = pathDist
+		local jumpAt = follower.JumpAt
+		if jumpAt then
+			local a = (t - jumpAt) / jumpSeconds
+			if a >= 1 then
+				follower.JumpAt = nil
+			else
+				lift += 4 * a * (1 - a) * jumpHeight
+			end
+		end
+		if waveAt then
+			local a = (t - waveAt - i * Render.JumpWaveDelay) / jumpSeconds
+			if a > 0 and a < 1 then
+				lift += 4 * a * (1 - a) * Render.JumpWaveHeight
+			end
+		end
+
 		-- Facing along the path; hop and waddle.
 		local direction = sampleDir[i]
 		local flat = Vector3.new(direction.X, 0, direction.Z)
@@ -493,6 +572,7 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		end
 	end
 	view.Dirty = false
+	Path.DropPassed(path, headDist - pathOffsets[count])
 	return drawn
 end
 
@@ -511,17 +591,35 @@ local function record(dt: number)
 		end
 		view.Root = root
 		view.Humanoid = humanoid
-		local ground = Path.GroundPoint(root, humanoid)
 		local path = view.Path
 		if not path then
 			path = Path.new(LineRules.PathKeep(Config.Line.MaxCapacity))
 			view.Path = path
 		end
-		if Path.Record(path, ground, -root.CFrame.LookVector) then
+		-- Ground height only, never in the air (4.3); a take-off leaves a hop marker.
+		local ground, airborne = Path.Locate(path, root, humanoid)
+		local reset, tookOff = Path.Record(path, ground, airborne, -root.CFrame.LookVector)
+		if tookOff and #stats.Events < 80 then
+			table.insert(
+				stats.Events,
+				string.format(
+					"%.2f take-off: line %d at (%.1f, %.1f), %d hop markers",
+					os.clock(),
+					ownerId,
+					ground.X,
+					ground.Z,
+					#path.HopDist
+				)
+			)
+		end
+		if reset then
 			for _, follower in view.Followers do
 				follower.Shown = nil -- reset: snap, don't glide
 				follower.GlideFrom = nil
+				follower.PathDist = nil
 			end
+		elseif tookOff and Render.JumpWave and view.Moving < Render.JumpWaveStill then
+			view.WaveAt = os.clock()
 		end
 		local last = view.LastGround
 		local speed = if last and dt > 0 then Vector3.new(ground.X - last.X, 0, ground.Z - last.Z).Magnitude / dt else 0
@@ -615,7 +713,12 @@ end
 local function report(command: any, arg: any): any
 	if command == "reset" then
 		stats.Frames, stats.TotalMs, stats.MaxMs, stats.BulkMs = 0, 0, 0, 0
+		stats.JumpHops, stats.HopMissMax, stats.HopMissSum = 0, 0, 0
+		table.clear(stats.Events)
 		return "stats reset"
+	end
+	if command == "events" then
+		return table.concat(stats.Events, "\n")
 	end
 	if command == "path" then
 		local view = views[tonumber(arg) or localPlayer.UserId]
@@ -623,15 +726,24 @@ local function report(command: any, arg: any): any
 		if not view or not path or not view.Root then
 			return "no recorded line"
 		end
-		local head = Path.GroundPoint(view.Root, view.Humanoid)
+		local head = Path.LiveHead(path, view.Root, view.Humanoid)
+		local hopList = {}
+		for k, d in path.HopDist do
+			local at = path.HopAt[k]
+			table.insert(hopList, string.format("%.1f (%.1f, %.1f, %.1f)", d, at.X, at.Y, at.Z))
+		end
 		local out = {
 			string.format(
-				"client path: %d points, %.2f studs; head (%.2f, %.2f, %.2f)",
+				"client path: %d points, %.2f studs; head (%.2f, %.2f, %.2f), airborne %s; head distance %.1f; %d hop markers%s",
 				path.Count,
 				Path.Length(path, head),
 				head.X,
 				head.Y,
-				head.Z
+				head.Z,
+				tostring(path.Airborne),
+				Path.HeadDistance(path, head),
+				#path.HopDist,
+				if #hopList > 0 then ": " .. table.concat(hopList, ", ") else ""
 			),
 		}
 		for k, p in Path.Newest(path, 8) do
@@ -647,7 +759,7 @@ local function report(command: any, arg: any): any
 		local count = #view.Followers
 		local pos: { Vector3 } = {}
 		local dir: { Vector3 } = {}
-		Path.Sample(view.Path, Path.GroundPoint(view.Root, view.Humanoid), view.Offsets, count, pos, dir)
+		Path.Sample(view.Path, Path.LiveHead(view.Path, view.Root, view.Humanoid), view.Offsets, count, pos, dir)
 		return pos
 	end
 	local lines: { string } = {}
@@ -684,7 +796,7 @@ local function report(command: any, arg: any): any
 		window += ms
 	end
 	return string.format(
-		"LineRenderer: %d lines, %d drawn (%d parts), phone %s\n%s\n  settled error: max %.4f studs over %d followers (%d gliding)\n  frame: last %.3f ms, avg (120) %.3f ms, avg (all %d) %.3f ms (BulkMoveTo %.3f ms), max %.3f ms",
+		"LineRenderer: %d lines, %d drawn (%d parts), phone %s\n%s\n  settled error: max %.4f studs over %d followers (%d gliding)\n  frame: last %.3f ms, avg (120) %.3f ms, avg (all %d) %.3f ms (BulkMoveTo %.3f ms), max %.3f ms\n  jump hops: %d followers passed a marker, miss max %.2f studs, mean %.2f studs",
 		#lines,
 		stats.Drawn,
 		stats.Parts,
@@ -698,7 +810,10 @@ local function report(command: any, arg: any): any
 		stats.Frames,
 		if stats.Frames > 0 then stats.TotalMs / stats.Frames else 0,
 		if stats.Frames > 0 then stats.BulkMs / stats.Frames else 0,
-		stats.MaxMs
+		stats.MaxMs,
+		stats.JumpHops,
+		stats.HopMissMax,
+		if stats.JumpHops > 0 then stats.HopMissSum / stats.JumpHops else 0
 	)
 end
 

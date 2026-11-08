@@ -4,7 +4,8 @@
 --
 -- Each leader is a default R15 model named `DebugLeader_<n>` in `Workspace.DebugLeaders` (names from Config.Debug;
 -- attribute `LeaderId` = −n). Clients find a leader's model by that name. It walks to random points inside one biome with server-side
--- Humanoid:MoveTo (biomes are convex, so straight walks stay inside) at the walk speed LineService sets.
+-- Humanoid:MoveTo (biomes are convex, so straight walks stay inside) at the walk speed LineService sets. Setting the
+-- model attribute `DebugHold` pauses the wandering so a check script can steer (and jump) the leader itself.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -91,6 +92,10 @@ local function wander(leader: Leader, biomeId: string)
 		return
 	end
 	while leader.Alive and leader.Model.Parent do
+		if leader.Model:GetAttribute("DebugHold") then
+			task.wait(0.25) -- a check script is steering this leader
+			continue
+		end
 		local target = DebugLeaders.RandomPoint(biomeId)
 		if target then
 			humanoid:MoveTo(target)

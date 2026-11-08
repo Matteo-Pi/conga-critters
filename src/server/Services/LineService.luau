@@ -369,20 +369,21 @@ function LineService.FollowerPositions(ownerId: number): ({ Vector3 }, number)
 		return scratchPos, 0
 	end
 	local count = #line.Entries
-	Path.Sample(line.Path, Path.GroundPoint(root, humanoid), line.Offsets, count, scratchPos, scratchDir)
+	Path.Sample(line.Path, Path.LiveHead(line.Path, root, humanoid), line.Offsets, count, scratchPos, scratchDir)
 	return scratchPos, count
 end
 
--- Debug: the server path's point count, studs kept behind the leader, and its newest `n` points.
-function LineService.PathInfo(ownerId: number, n: number): (number, number, { Vector3 })
+-- Debug: the server path's point count, studs kept behind the leader, its newest `n` points, and its hop markers
+-- (path distances).
+function LineService.PathInfo(ownerId: number, n: number): (number, number, { Vector3 }, { number })
 	local line = lines[ownerId]
 	local path = line and line.Path
 	if not line or not path then
-		return 0, 0, {}
+		return 0, 0, {}, {}
 	end
 	local root, humanoid = character(line)
-	local head = if root then Path.GroundPoint(root, humanoid) else Vector3.zero
-	return path.Count, Path.Length(path, head), Path.Newest(path, n)
+	local head = if root then Path.LiveHead(path, root, humanoid) else Vector3.zero
+	return path.Count, Path.Length(path, head), Path.Newest(path, n), table.clone(path.HopDist)
 end
 
 -- Every line's owner id and length (debug and checks).
@@ -401,13 +402,15 @@ local function sample()
 			line.Path = nil -- start again when the leader is back
 			continue
 		end
-		local ground = Path.GroundPoint(root, humanoid)
 		local path = line.Path
 		if not path then
 			path = Path.new(LineRules.PathKeep(capacityOf(line)))
 			line.Path = path
 		end
-		Path.Record(path, ground, -root.CFrame.LookVector)
+		-- Ground height only, never in the air (4.3); a take-off leaves a hop marker.
+		local ground, airborne = Path.Locate(path, root, humanoid)
+		Path.Record(path, ground, airborne, -root.CFrame.LookVector)
+		Path.DropPassed(path, Path.HeadDistance(path, ground) - (line.Offsets[#line.Entries] or 0))
 		applyWalkSpeed(line)
 	end
 end
