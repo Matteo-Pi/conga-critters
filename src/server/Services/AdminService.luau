@@ -8,6 +8,7 @@
 --     datamodel (requiring this module from there would give a separate copy without the live state).
 -- Spec 4.10 names an `AdminCommand` remote for admin commands; the two routes are to be brought together in C01-M8
 -- (spec 16). Replies go to the server console and are returned to the bridge caller.
+-- C01-M3: `fill` now draws followers (LineSync); new `speed`, `longleash`, `leaders`, `walk8` and `linepos`.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +28,7 @@ local PlayerStateService = require(Services:WaitForChild("PlayerStateService") :
 local ThrowService = require(Services:WaitForChild("ThrowService") :: ModuleScript)
 
 local Checks = script.Parent.Parent:WaitForChild("Checks")
+local DebugLeaders = require(script.Parent.Parent:WaitForChild("DebugLeaders") :: ModuleScript)
 
 local TAG = "[Debug]"
 
@@ -294,14 +296,20 @@ local function lineReport(player: Player): string
 	local tutorial = if session
 		then `tutorial {if session.Tutorial.Done then "done" else "running"}, free throws {session.Tutorial.FreeThrows}`
 		else "no session"
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	return string.format(
-		"%s: line %d/%d, %d on the way, room %d; Leash level %d; Golden Bait %d; %s",
+		"%s: line %d/%d, %d on the way, room %d; Leash %d, Speed %d, Longer Leash %s; walk speed %.3f (Humanoid %s); Golden Bait %d; %s",
 		player.Name,
 		LineService.Length(player),
 		LineService.Capacity(player),
 		LineService.Incoming(player),
 		LineService.Room(player),
 		if session then session.Upgrades.Leash else 0,
+		if session then session.Upgrades.Speed else 0,
+		if session and session.LongerLeash then "on" else "off",
+		LineService.WalkSpeedOf(player.UserId),
+		if humanoid then string.format("%.3f", humanoid.WalkSpeed) else "none",
 		if session then session.GoldenBait else 0,
 		tutorial
 	)
@@ -324,24 +332,32 @@ register("line", "line [player]", "line length, critters on the way, capacity", 
 	return lineReport(player)
 end)
 
--- Followers draw from C01-M3; until then `fill` sets the server line only (enough for the leash-full check).
-register("fill", "fill <player|me> <n>", "fill a line to n critters (capped at capacity)", function(caller, args)
-	local player, err = findPlayer(caller, args[1])
-	if not player then
-		return `fill: {err}`
+register(
+	"fill",
+	"fill <player|me> <n> [biome]",
+	"fill a line to n critters (capped at capacity)",
+	function(caller, args)
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `fill: {err}`
+		end
+		local n = tonumber(args[2])
+		if not n or n ~= n or n < 0 then
+			return "fill: n must be a number of 0 or more"
+		end
+		local biomeId = args[3] or Config.Biomes.List[1].Id
+		if not Config.Biomes.ById[biomeId] then
+			return `fill: biome must be one of {biomeList()}`
+		end
+		local rng = Random.new()
+		LineService.Fill(player, n, function()
+			local result = Odds.Roll(biomeId, Odds.DefaultContext(), rng)
+			assert(result, `{biomeId} has no critters`)
+			return { Species = result.Species, Variant = result.Variant, Bound = false, Paid = false }
+		end)
+		return lineReport(player)
 	end
-	local n = tonumber(args[2])
-	if not n or n ~= n or n < 0 then
-		return "fill: n must be a number of 0 or more"
-	end
-	local rng = Random.new()
-	LineService.Fill(player, n, function()
-		local result = Odds.Roll("meadow", Odds.DefaultContext(), rng)
-		assert(result, "meadow has no critters")
-		return { Species = result.Species, Variant = result.Variant, Bound = false, Paid = false }
-	end)
-	return lineReport(player)
-end)
+)
 
 register("leash", "leash <player|me> <level>", "set the Leash level (upgrades arrive in C01-M4)", function(caller, args)
 	local player, err = findPlayer(caller, args[1])
@@ -355,6 +371,166 @@ register("leash", "leash <player|me> <level>", "set the Leash level (upgrades ar
 	LineService.SetLeashLevel(player, level)
 	return lineReport(player)
 end)
+
+register("speed", "speed <player|me> <level>", "set the Speed level (upgrades arrive in C01-M4)", function(caller, args)
+	local player, err = findPlayer(caller, args[1])
+	if not player then
+		return `speed: {err}`
+	end
+	local level = tonumber(args[2])
+	if not level or level ~= level then
+		return `speed: level must be 1 to {#Config.Upgrades.Tracks.Speed.Levels}`
+	end
+	LineService.SetSpeedLevel(player, level)
+	return lineReport(player)
+end)
+
+register(
+	"longleash",
+	"longleash <player|me> <on|off>",
+	"own the Longer Leash pass this session (passes arrive in C01-M6)",
+	function(caller, args)
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `longleash: {err}`
+		end
+		local what = string.lower(args[2] or "")
+		if what ~= "on" and what ~= "off" then
+			return "longleash: on or off"
+		end
+		LineService.SetLongerLeash(player, what == "on")
+		return lineReport(player)
+	end
+)
+
+register(
+	"leaders",
+	"leaders <k> [biome]",
+	"spawn or remove debug leaders until there are k, each with a full line",
+	function(_caller, args)
+		local k = tonumber(args[1])
+		if not k or k ~= k or k < 0 then
+			return `leaders: k must be 0 to {Config.Debug.MaxLeaders}`
+		end
+		local biomeId = args[2]
+		if biomeId and not Config.Biomes.ById[biomeId] then
+			return `leaders: biome must be one of {biomeList()}`
+		end
+		local count = DebugLeaders.Set(k, biomeId)
+		local lengths: { string } = {}
+		for ownerId, length in LineService.Lines() do
+			table.insert(lengths, `{ownerId}: {length}`)
+		end
+		table.sort(lengths)
+		return `leaders: {count} debug leaders; lines {table.concat(lengths, ", ")}`
+	end
+)
+
+register(
+	"goto",
+	"goto <player|me> <biome> [depth]",
+	"move the player (on the server) depth studs into a biome, facing in",
+	function(caller, args)
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `goto: {err}`
+		end
+		local biomeId = args[2]
+		if not biomeId or not Config.Biomes.ById[biomeId] then
+			return `goto: biome must be one of {biomeList()}`
+		end
+		local character = player.Character
+		if not character then
+			return `goto: {player.Name} has no character`
+		end
+		local depth = tonumber(args[3]) or 200
+		local point = DebugLeaders.PointInBiome(biomeId, depth)
+		local _, inward = DebugLeaders.BiomeFrame(biomeId)
+		if not point then
+			return `goto: no floor {depth} studs into {biomeId}`
+		end
+		local lifted = point + Vector3.new(0, 4, 0)
+		character:PivotTo(CFrame.lookAt(lifted, lifted + inward))
+		return string.format("goto: %s to (%.0f, %.0f, %.0f) in %s", player.Name, point.X, point.Y, point.Z, biomeId)
+	end
+)
+
+register(
+	"walk8",
+	"walk8 <player|me> [halfWidth] [laps] [depth] | stop | status",
+	"walk a figure of eight in the player's biome (server MoveTo)",
+	function(caller, args)
+		local first = string.lower(args[1] or "")
+		if first == "stop" then
+			DebugLeaders.StopWalk()
+			return "walk8: stopped"
+		end
+		if first == "status" then
+			local walk = DebugLeaders.WalkStatus()
+			if not walk then
+				return "walk8: no walk yet"
+			end
+			return string.format(
+				"walk8: %s, lap %d/%d, %.0f studs in %.1f s",
+				if walk.Running then "running" else "finished",
+				walk.Lap,
+				walk.Laps,
+				walk.Distance,
+				(walk.EndedAt or os.clock()) - walk.StartedAt
+			)
+		end
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `walk8: {err}`
+		end
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or not humanoid.RootPart then
+			return `walk8: {player.Name} has no character`
+		end
+		local biomeId = MapService.ZoneAt(humanoid.RootPart.Position).BiomeId or Config.Biomes.List[1].Id
+		local size = tonumber(args[2]) or 60
+		local laps = tonumber(args[3]) or 2
+		local depth = tonumber(args[4]) or 200
+		return "walk8: " .. DebugLeaders.WalkFigureEight(humanoid, biomeId, size, laps, depth)
+	end
+)
+
+register(
+	"linepos",
+	"linepos <player|me|leaderId> [every]",
+	"server-side follower positions (every n-th)",
+	function(caller, args)
+		local ownerId = tonumber(args[1])
+		if not ownerId or ownerId > Config.Debug.LeaderIdBase then
+			local player, err = findPlayer(caller, args[1])
+			if not player then
+				return `linepos: {err}`
+			end
+			ownerId = player.UserId
+		end
+		local id = ownerId :: number
+		local every = math.max(1, math.floor(tonumber(args[2]) or 50))
+		local positions, count = LineService.FollowerPositions(id)
+		local out = {
+			`linepos {id}: {count} followers, walk speed {string.format("%.3f", LineService.WalkSpeedOf(id))}`,
+		}
+		local points, studs, newest = LineService.PathInfo(id, 8)
+		table.insert(out, string.format("  server path: %d points, %.2f studs", points, studs))
+		for k, p in newest do
+			table.insert(out, string.format("  point %d: (%.2f, %.2f, %.2f)", k - 1, p.X, p.Y, p.Z))
+		end
+		for i = every, count, every do
+			local p = positions[i]
+			table.insert(out, string.format("  %d: %.2f, %.2f, %.2f", i, p.X, p.Y, p.Z))
+		end
+		if count > 0 and count % every ~= 0 then
+			local p = positions[count]
+			table.insert(out, string.format("  %d: %.2f, %.2f, %.2f", count, p.X, p.Y, p.Z))
+		end
+		return table.concat(out, "\n")
+	end
+)
 
 register("golden", "golden <player|me> <n>", "set the Golden Bait count", function(caller, args)
 	local player, err = findPlayer(caller, args[1])
@@ -395,7 +571,6 @@ register(
 	end
 )
 
-later("leaders", "leaders <k>", "spawn k debug leaders with full lines", "C01-M3")
 later("coins", "coins <player|me> <amount>", "give coins", "C01-M4")
 later("storage", "storage <player|me> [n|full]", "fill storage", "C01-M4")
 later("reset", "reset <player|me>", "reset a profile (Studio only)", "C01-M4")

@@ -98,6 +98,35 @@ export type LineConfig = {
 	SlowPerCritter: number,
 	MinSpeedFactor: number,
 	Spacing: { [SizeClass]: number },
+	Path: LinePathConfig,
+	Render: LineRenderConfig,
+	Banners: { number }, -- own line lengths that fire a banner (spec 4.3, 7.4)
+}
+
+export type LinePathConfig = {
+	MinStep: number, -- studs the leader moves before a new breadcrumb
+	KeepPerCapacity: number, -- keep capacity × this + KeepExtra studs of path
+	KeepExtra: number,
+	ResetJump: number, -- a jump longer than this between samples resets the path
+	ServerSampleHz: number,
+}
+
+export type LineRenderConfig = {
+	HopHeight: number, -- studs
+	HopSpeed: number, -- ω, radians per second
+	HopPhase: number, -- φ, radians between neighbours
+	IdleHop: number, -- share of the hop kept while the leader stands still
+	WaddleDegrees: number,
+	Smoothing: number, -- per second: how fast a sudden jump in a follower's target is taken out
+	SnapDistance: number, -- a jump longer than this snaps instead of gliding
+	FullDetailDistance: number, -- studs: hop, waddle, particles and colour cycling within this
+	FarUpdateEvery: number, -- beyond FullDetailDistance, followers move every this many frames
+	HideDistance: number,
+	HideDistancePhone: number,
+	MaxDrawn: number,
+	MaxDrawnPhone: number,
+	ClaimSeconds: number, -- a critter that has eaten waits this long (plus ping) for its line to claim it
+	JoinHopHeight: number, -- studs: the arc of a joining critter's hop from its bait into the line
 }
 
 export type ThrowConfig = {
@@ -343,6 +372,11 @@ export type DebugConfig = {
 	ChatCommandShort: string,
 	StudioBridgeName: string,
 	RollMaxSamples: number,
+	MaxLeaders: number,
+	LeadersFolderName: string,
+	LeaderNamePrefix: string,
+	LeaderIdBase: number,
+	RendererBridgeName: string,
 }
 
 export type CameraConfig = {

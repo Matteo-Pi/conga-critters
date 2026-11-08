@@ -1,9 +1,9 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.11
+spec_version: 0.12
 date: 2026-11-08
-status: "C01-M2 done: throwing, server checks and rolls, arrival animations, tutorial fixed rolls. C01-M3 next."
+status: "C01-M3 checks 1–3 done in Studio: follower chain, LineSync, walk speed. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
   - "/docs/economy.md (v0.4): every tuning number, and the simulation behind them"
@@ -609,12 +609,14 @@ src/
     Net.luau                   remote names, payload types, rate limits
     Odds.luau                  roll and display maths (server rolls, clients display)
     Path.luau                  breadcrumb path maths (server and clients)
+    LineRules.luau             capacity, walk speed, Conga multiplier, spacing (server and clients)
     Zones.luau                 point-in-zone tests and zone classification
     Unlocks.luau               biome unlock rule and top tier (server and clients)
     Format.luau                number formatting
   server/                      -> ServerScriptService.Server
     init.server.luau           boot: validate Config, require services, Init() all, then Start() all
     ConfigValidator.luau       config validator (9.10)
+    DebugLeaders.luau          debug leaders and the scripted figure-of-eight walk (9.10); not a service
     Checks/                    acceptance checks run by the `check` debug command; not loaded at boot
     Packages/ProfileStore
     Services/                  see the table below
@@ -1072,6 +1074,14 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | If THROW stays on PC, it gets a wordless click hint: a mouse icon on the button, plus the tutorial's cursor hint (2.1, 4.1) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
 | 2026-11-08 | Cover props tagged `Burrow` (bushes, grass, logs, rocks) so most throw spots have one within `BurrowSearchRadius` (30 studs). A critter from the fallback spawn appears with a dust puff or rustle. Run-in and join timings don't change (4.2, 8) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
 | 2026-11-08 | Ambient life for the soft launch is decoration only, drawn on each player's own screen (rustling, burrow peeks, birds), with no roaming critters. Revisit roaming at the day-14 review (8, 14) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
+| 2026-11-08 | A shared `LineRules.luau` holds capacity, walk speed, the Conga multiplier and spacing, so the server, the HUD and the checks use one copy (9.2). Walk speed uses the Speed track's value (20 to 28) × the length factor; the validator checks that Speed level 1 equals `BaseWalkSpeed` | C01-M3 | Final unless changed |
+| 2026-11-08 | Clients record leader paths on Heartbeat and draw on RenderStepped (9.5 said "each frame"). A frame that isn't drawn (a hitch, an unfocused Studio window) then leaves no gap or reset in the path | C01-M3 | Final unless changed |
+| 2026-11-08 | Level of detail beyond 80 studs also drops the hop and waddle and moves each follower every `FarUpdateEvery` (2) frames, and only when it has moved; a far line standing still costs nothing. Within 80 studs, followers hop and waddle every frame (9.5) | C01-M3 | Tunable after the phone test |
+| 2026-11-08 | The renderer smooths only sudden jumps in a follower's target (a delivery moving the line up, a snapshot), over about 3 / `Smoothing` s; while walking, followers sit exactly on the path. The hop shrinks to `IdleHop` (25%) while the leader stands still. A joining critter keeps eating at its bait until its line claims it, then hops into place (`HopSeconds`); one nobody claims within `ClaimSeconds` (+ ping) puffs away. New `Config/Line` blocks `Path` and `Render`, and `Banners` (100, 200, 300) | C01-M3 | Tunable |
+| 2026-11-08 | Spacing stays at the spec's S 2.2, M 3.0, L 4.0. The placeholder S models are 2.5 studs long, so they overlap slightly: the day-7 meshes should be at most about 2.0 (S), 2.8 (M) and 3.8 (L) studs long, and one part each, which also halves `BulkMoveTo` work | C01-M3 | For the mesh swap |
+| 2026-11-08 | If the character dies, the line is kept for now: banking (4.5.5) arrives in C01-M4 and loose critters in C01-M5, which finish 4.3's rule | C01-M3 | Do in C01-M4/M5 |
+| 2026-11-08 | Debug leaders own ids from −1001 down (`Config.Debug.LeaderIdBase`), because Studio test players already use −1, −2, …; clients look a line's owner up as a player first, then as a debug leader. New debug commands `speed`, `longleash`, `leaders`, `goto`, `walk8` (a server-driven figure-of-eight, since MCP's `character_navigation` desyncs under Server Authority) and `linepos`. `Config.Admin.Whitelist` is still empty, so `leaders` works only in Studio until the developer adds a UserId for the phone test | C01-M3 | Final unless changed |
+| 2026-11-08 | Client and server follower positions differ slightly when the server drives the local character (`walk8`): the client mispredicts at each turn and the final stop, so on a 300-line figure-of-eight its own line drifted up to 8 studs from the server's by the tail. Another player's line, seen by a second client, matched the server to 0.01 studs along the walked path. Tune the cut radius in C01-M5 with that in mind | C01-M3 | Note for C01-M5 |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1094,4 +1104,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.9 (2026-11-08): C01-M1. 9.2's layout gains `Unlocks.luau`, `ConfigValidator.luau` and `Checks/`. Section 16 logs placeholder critter models, the debug command routes (chat `TextChatCommand` and a Studio bridge, to merge with 4.10's `AdminCommand` in M8), the shared unlock rule with session LP, gate and pen access moved to M4, pen assignment, and the P0-only zero-id check.
 - 0.10 (2026-11-08): C01-M2. Throwing and arrival built (4.1, 4.2). Section 16 logs THROW on every device and the two input actions, rejection shown by an unmatched bait, landing timing and the new `Config/Throw` feel numbers, the rate limit and cooldown with rejection reasons, landing points pulled into the biome, how fixed tutorial rolls count, the stand-in join animation and deferred cues, and the new debug commands.
 - 0.11 (2026-11-08): three proposals for the Sun 15 Nov UI/art pass logged in 16, nothing built: a click hint if THROW stays on PC, cover props tagged `Burrow` with a puff for fallback spawns, and decoration-only ambient life with roaming critters revisited at day 14.
+- 0.12 (2026-11-08): C01-M3 (checks 1–3). 9.2's layout gains `LineRules.luau` and `DebugLeaders.luau`. Section 16 logs the shared line rules, Heartbeat path recording, the far level of detail, smoothing and the join hand-off, mesh sizes for the spacing, the line kept on death until M4/M5, debug leader ids and commands, and the client/server position gap to bear in mind for M5.
  

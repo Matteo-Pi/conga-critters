@@ -2,8 +2,8 @@
 -- CritterFx: run-ins, eating, joins, loose critters, snips, delivery pops (spec 9.2).
 -- C01-M2: the bait arc, the puff when a throw is rejected, and each critter's arrival (spec 4.1, 4.2 Arrival):
 --   bait lands (landAt) -> runs in from `from` (RunInSeconds) -> eats (EatSeconds) -> the server adds it at joinAt
---   -> hops to the owner's back (HopSeconds) and vanishes.
--- Following arrives with LineRenderer in C01-M3; until then a joined critter disappears into the line.
+--   -> keeps eating until LineRenderer claims it (ClaimArrival, when the LineSync append arrives) and hops it into
+--   its place in the line. One that nobody claims within ClaimSeconds (plus ping) was dropped: it puffs away.
 -- Times are server times (workspace:GetServerTimeNow), so every client plays the same arrival at the same moment.
 --
 -- There is no reply to ThrowBait (spec 9.4), so a rejection shows as a bait that no CritterSpawned matched within
@@ -50,10 +50,10 @@ type Critter = {
 	LandAt: number,
 	BaitLandedAt: number, -- for logs: when this client saw the bait land
 	JoinAt: number,
-	Phase: string, -- "wait", "run", "eat", "hop"
-	HopFrom: Vector3?,
+	Phase: string, -- "wait", "run", "eat", "claim"
 	RanInAt: number?,
 	AteAt: number?,
+	Claimed: boolean,
 }
 
 local fxFolder: Folder? = nil
@@ -276,9 +276,9 @@ local function onCritterSpawned(data: any)
 		BaitLandedAt = baitLandedAt,
 		JoinAt = payload.joinAt,
 		Phase = "wait",
-		HopFrom = nil,
 		RanInAt = nil,
 		AteAt = nil,
+		Claimed = false,
 	}
 	table.insert(critters, critter)
 end
@@ -297,21 +297,63 @@ local function place(critter: Critter, position: Vector3, facing: Vector3)
 	end
 end
 
-local function ownerTail(critter: Critter): Vector3?
-	local owner = Players:GetPlayerByUserId(critter.OwnerId)
-	local character = owner and owner.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not root or not root:IsA("BasePart") then
+local function logJoin(critter: Critter, t: number, how: string)
+	if not critter.Own then
+		return
+	end
+	local base = critter.BaitLandedAt
+	log(
+		string.format(
+			"#%d %s: bait landed %.3f; ran in +%.2f, ate +%.2f, %s +%.2f s (server join +%.2f)",
+			critter.Id,
+			critter.Species,
+			base,
+			(critter.RanInAt or t) - base,
+			(critter.AteAt or t) - base,
+			how,
+			t - base,
+			critter.JoinAt - base
+		)
+	)
+end
+
+-- LineRenderer: a critter of `ownerId`'s with this species and variant has joined the line. Takes the oldest
+-- matching critter that has finished eating (or nearly), removes it, and returns where it stood (on the floor), so
+-- the follower can hop from there. Nil when there is none (a client that joined late, or a debug fill).
+function CritterFx.ClaimArrival(ownerId: number, speciesId: string, variant: number): Vector3?
+	local t = now()
+	local best: Critter? = nil
+	for _, critter in critters do
+		if
+			not critter.Claimed
+			and critter.OwnerId == ownerId
+			and critter.Species == speciesId
+			and critter.Variant == variant
+			and t >= critter.JoinAt - 1
+			and (best == nil or critter.JoinAt < best.JoinAt)
+		then
+			best = critter
+		end
+	end
+	if not best then
 		return nil
 	end
-	local back = root.Position - root.CFrame.LookVector * 3
-	return Vector3.new(back.X, critter.To.Y, back.Z)
+	best.Claimed = true
+	logJoin(best, t, "joined")
+	if best.Model then
+		best.Model:Destroy()
+		best.Model = nil
+	end
+	return best.Stop
 end
 
 -- Returns false when the critter is finished.
 local function stepCritter(critter: Critter, t: number): boolean
+	if critter.Claimed then
+		return false
+	end
 	local runEnd = critter.LandAt + Config.Throw.RunInSeconds
-	local hopEnd = critter.JoinAt + Config.Throw.HopSeconds
+	local claimEnd = critter.JoinAt + Config.Line.Render.ClaimSeconds + 2 * localPlayer:GetNetworkPing()
 
 	if t < critter.LandAt then
 		return true
@@ -341,34 +383,19 @@ local function stepCritter(critter: Critter, t: number): boolean
 		end
 		local peck = math.abs(math.sin((t - runEnd) * math.pi * 5)) * 0.3
 		place(critter, critter.Stop - Vector3.new(0, peck, 0), critter.To - critter.Stop)
-	elseif t < hopEnd then
-		if critter.Phase ~= "hop" then
-			critter.Phase = "hop"
+	elseif t < claimEnd then
+		-- Eaten: the server has added it (or is about to); keep pecking until the line claims it.
+		if critter.Phase ~= "claim" then
+			critter.Phase = "claim"
 			critter.AteAt = t
 			critter.RanInAt = critter.RanInAt or t
-			critter.HopFrom = critter.Stop
 		end
-		local from = critter.HopFrom or critter.Stop
-		local tail = ownerTail(critter) or from
-		local a = (t - critter.JoinAt) / Config.Throw.HopSeconds
-		local height = 4 * a * (1 - a) * 2.5
-		place(critter, from:Lerp(tail, a) + Vector3.new(0, height, 0), tail - from)
+		local peck = math.abs(math.sin((t - runEnd) * math.pi * 5)) * 0.3
+		place(critter, critter.Stop - Vector3.new(0, peck, 0), critter.To - critter.Stop)
 	else
-		if critter.Own then
-			local base = critter.BaitLandedAt
-			log(
-				string.format(
-					"#%d %s: bait landed %.3f; ran in +%.2f, ate +%.2f, joined +%.2f s (server join +%.2f)",
-					critter.Id,
-					critter.Species,
-					base,
-					(critter.RanInAt or t) - base,
-					(critter.AteAt or t) - base,
-					t - base,
-					critter.JoinAt - base
-				)
-			)
-		end
+		-- Nobody claimed it: the server dropped it (the line filled, or the owner left).
+		logJoin(critter, t, "unclaimed, puffed")
+		burst(critter.Stop + Vector3.new(0, 1, 0), Color3.fromRGB(220, 220, 220), 0.8, 3, 0.3, 0.3)
 		if critter.Model then
 			critter.Model:Destroy()
 			critter.Model = nil

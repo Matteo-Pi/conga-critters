@@ -2,6 +2,7 @@
 -- PlayerStateService: session state: line, critters on their way, cooldowns, shields (spec 9.2).
 -- C01-M1: session LP (default 0) and the debug unlock set, so biome access has one rule from the start. LP moves to
 -- the saved profile in C01-M4; callers keep using GetLP and IsBiomeUnlocked.
+-- C01-M3: the Speed level (walk speed) and the RequestLineSync bucket.
 -- C01-M2: the line (entries and critters on their way), upgrade levels, Golden Bait, the tutorial's free-throw count
 -- and the throw cooldown. Upgrades, Golden Bait and tutorial progress move to the saved profile in C01-M4; LineService
 -- and ThrowService read and change them through the session.
@@ -24,7 +25,7 @@ export type LineEntry = {
 export type Session = {
 	LP: number,
 	DebugUnlocked: Unlocks.DebugSet,
-	Upgrades: { Leash: number, Bait: number },
+	Upgrades: { Leash: number, Bait: number, Speed: number },
 	Rebirths: number,
 	LongerLeash: boolean,
 	GoldenBait: number,
@@ -32,6 +33,7 @@ export type Session = {
 	Line: { Entries: { LineEntry }, Incoming: number },
 	LastThrowAt: number, -- os.clock() of the last accepted throw
 	ThrowBucket: Net.Bucket,
+	SyncBucket: Net.Bucket, -- RequestLineSync
 }
 
 local PlayerStateService = {}
@@ -42,7 +44,7 @@ local function newSession(): Session
 	return {
 		LP = 0,
 		DebugUnlocked = {},
-		Upgrades = { Leash = 1, Bait = 1 },
+		Upgrades = { Leash = 1, Bait = 1, Speed = 1 },
 		Rebirths = 0,
 		LongerLeash = false,
 		GoldenBait = 0,
@@ -50,6 +52,7 @@ local function newSession(): Session
 		Line = { Entries = {}, Incoming = 0 },
 		LastThrowAt = -math.huge,
 		ThrowBucket = Net.NewBucket(Net.RateLimits.ThrowBait),
+		SyncBucket = Net.NewBucket(Net.RateLimits.RequestLineSync),
 	}
 end
 

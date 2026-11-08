@@ -175,6 +175,42 @@ function ConfigValidator.Collect(live: boolean): { string }
 	if throw.FallbackSpawnMin > throw.FallbackSpawnMax then
 		table.insert(problems, "Throw: FallbackSpawnMin must be at most FallbackSpawnMax")
 	end
+	-- The line (spec 4.3, 9.5)
+	local line = Config.Line
+	for _, size in { "S", "M", "L" } do
+		if not positive(line.Spacing[size]) then
+			table.insert(problems, `Line: Spacing.{size} must be positive`)
+		end
+	end
+	for key, value in line.Path :: any do
+		if not positive(value) then
+			table.insert(problems, `Line: Path.{key} must be positive`)
+		end
+	end
+	for key, value in line.Render :: any do
+		if key ~= "IdleHop" and not positive(value) then
+			table.insert(problems, `Line: Render.{key} must be positive`)
+		end
+	end
+	if line.Render.IdleHop < 0 or line.Render.IdleHop > 1 then
+		table.insert(problems, "Line: Render.IdleHop must be 0 to 1")
+	end
+	local largest = math.max(line.Spacing.S, line.Spacing.M, line.Spacing.L)
+	if line.Path.KeepPerCapacity < largest then
+		table.insert(problems, "Line: Path.KeepPerCapacity must be at least the largest spacing")
+	end
+	local lastMin = 0
+	for _, conga in line.Conga do
+		if conga.MinLength <= lastMin or not positive(conga.Multiplier) then
+			table.insert(problems, "Line: Conga steps need rising MinLength and positive multipliers")
+		end
+		lastMin = conga.MinLength
+	end
+	local speedLevels = Config.Upgrades.Tracks.Speed.Levels
+	if speedLevels[1].Value ~= line.BaseWalkSpeed then
+		table.insert(problems, "Line: Speed level 1 must equal BaseWalkSpeed")
+	end
+
 	for _, fixed in Config.Tutorial.FixedRolls do
 		if not Config.Rarities.ById[fixed.Rarity] then
 			table.insert(problems, `Tutorial: fixed roll on throw {fixed.Throw} has unknown rarity {fixed.Rarity}`)

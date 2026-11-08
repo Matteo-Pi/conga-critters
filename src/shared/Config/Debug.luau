@@ -13,6 +13,11 @@ local Debug: Types.DebugConfig = {
 	ChatCommandShort = "/d", -- TextChatCommand.SecondaryAlias
 	StudioBridgeName = "DebugBridge", -- BindableFunction under ServerScriptService, Studio only
 	RollMaxSamples = 1000000, -- `roll … <n>` refuses more than this
+	MaxLeaders = 12, -- `leaders <k>` spawns at most this many debug leaders
+	LeadersFolderName = "DebugLeaders", -- Workspace folder holding debug leader models
+	LeaderNamePrefix = "DebugLeader_", -- leader -n is the model named prefix .. n
+	LeaderIdBase = -1000, -- leader k owns id LeaderIdBase − k; Studio test players use −1, −2, …
+	RendererBridgeName = "LineRendererDebug", -- client BindableFunction under PlayerScripts, Studio only
 }
 
 return deepFreeze(Debug)

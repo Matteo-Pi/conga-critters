@@ -16,7 +16,21 @@ local FOLDER_NAME = "Remotes"
 Net.Names = table.freeze({
 	ThrowBait = "ThrowBait", -- client → server: (target: Vector3, golden: boolean)
 	CritterSpawned = "CritterSpawned", -- server → all: CritterSpawnedPayload
+	LineSync = "LineSync", -- server → all (or one, for snapshots on request): LineSyncPayload
+	RequestLineSync = "RequestLineSync", -- client → server: no payload; answered with a snapshot of every line
 })
+
+-- LineSync ops (spec 9.4). Each line has its own sequence number: every op but a requested snapshot adds 1, so a
+-- client that sees a gap asks again with RequestLineSync. `entries` are packed critters (Net.PackCritter).
+export type LineSyncOp = "snapshot" | "append" | "removeFront" | "clear"
+
+export type LineSyncPayload = {
+	userId: number, -- the line's owner; negative for debug leaders
+	seq: number,
+	op: LineSyncOp,
+	entries: { number }?, -- snapshot: the whole line, front first; append: the new critters
+	count: number?, -- removeFront: how many left the front
+}
 
 export type CritterSpawnedPayload = {
 	id: number, -- server-wide spawn id
@@ -37,6 +51,7 @@ Net.RateLimits = table.freeze({
 		Per = Config.Throw.Cooldown - Config.Throw.RateLimitSlack,
 		Burst = Config.Throw.RateLimitBurst,
 	}),
+	RequestLineSync = table.freeze({ Per = 2, Burst = 1 }),
 }) :: { [string]: RateLimit }
 
 local function folder(): Instance
