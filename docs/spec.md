@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.10
+spec_version: 0.11
 date: 2026-11-08
 status: "C01-M2 done: throwing, server checks and rolls, arrival animations, tutorial fixed rolls. C01-M3 next."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -1069,6 +1069,9 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Tutorial fixed rolls count accepted free throws only (Golden Bait throws never count or get one). The rarity is fixed; the species is an equal pick among that biome's species of that rarity, and the variant is rolled as usual. Kept in session state until C01-M4 saves tutorial progress | C01-M2 | Final unless changed |
 | 2026-11-08 | Until C01-M3's follower chain, a critter that joins hops to the player's back and vanishes. Deferred: the "NEW!" toast to C01-M7 (Index), the leash-full home arrow to C01-M4 (pens and delivery), the ×1.25 Conga badge to C01-M3's HUD | C01-M2 | Do in the named milestones |
 | 2026-11-08 | Debug commands added: `throws [reset]`, `line`, `leash`, `golden`, `tutorial`, and `fill` (the server line only until C01-M3 draws followers) | C01-M2 | Final unless changed |
+| 2026-11-08 | If THROW stays on PC, it gets a wordless click hint: a mouse icon on the button, plus the tutorial's cursor hint (2.1, 4.1) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
+| 2026-11-08 | Cover props tagged `Burrow` (bushes, grass, logs, rocks) so most throw spots have one within `BurrowSearchRadius` (30 studs). A critter from the fallback spawn appears with a dust puff or rustle. Run-in and join timings don't change (4.2, 8) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
+| 2026-11-08 | Ambient life for the soft launch is decoration only, drawn on each player's own screen (rustling, burrow peeks, birds), with no roaming critters. Revisit roaming at the day-14 review (8, 14) | Developer | Proposed — decide in the Sun 15 Nov UI/art pass |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1090,4 +1093,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.8 (2026-11-08): build day 1. The repo skeleton (Rojo, services and controllers booting in order) and `src/shared/Config` filled from economy.md, with `Config/Camera` added. The greybox map in the place file: 8 pens round a hexagonal hub, 6 gates in tier order clockwise (Meadow, Jungle, Peaks, Tier 4, Tier 5, event biomes), each a 60 × 50 archway, and cone biomes 110 wide at the entrance to 350 at 400 deep, with walls taller than the camera zoom limit. `Zones.Contains` tests box and trapezoid zones. Server Authority is on. Matching changes to 2.1, 3.1, 3.2, 4.10 (Critter Rush defaults to 30 minutes), 9.2, 10.1 (art pass on Sun 15 Nov) and 16.
 - 0.9 (2026-11-08): C01-M1. 9.2's layout gains `Unlocks.luau`, `ConfigValidator.luau` and `Checks/`. Section 16 logs placeholder critter models, the debug command routes (chat `TextChatCommand` and a Studio bridge, to merge with 4.10's `AdminCommand` in M8), the shared unlock rule with session LP, gate and pen access moved to M4, pen assignment, and the P0-only zero-id check.
 - 0.10 (2026-11-08): C01-M2. Throwing and arrival built (4.1, 4.2). Section 16 logs THROW on every device and the two input actions, rejection shown by an unmatched bait, landing timing and the new `Config/Throw` feel numbers, the rate limit and cooldown with rejection reasons, landing points pulled into the biome, how fixed tutorial rolls count, the stand-in join animation and deferred cues, and the new debug commands.
+- 0.11 (2026-11-08): three proposals for the Sun 15 Nov UI/art pass logged in 16, nothing built: a click hint if THROW stays on PC, cover props tagged `Burrow` with a puff for fallback spawns, and decoration-only ambient life with roaming critters revisited at day 14.
  
