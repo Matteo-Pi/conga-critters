@@ -67,7 +67,7 @@ local Line: Types.LineConfig = {
 		-- A jump on the spot (leader's Moving below JumpWaveStill) sends a hop down the line, JumpWaveDelay seconds per
 		-- follower (on since 2026-11-08, the developer's call: it engages players). Off, the line stays on the ground.
 		JumpWave = true,
-		JumpWaveHeight = 1.5,
+		JumpWaveHeight = 4.0,
 		JumpWaveDelay = 0.03,
 		JumpWaveStill = 0.3,
 	},
