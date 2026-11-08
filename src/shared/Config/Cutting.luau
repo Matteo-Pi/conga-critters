@@ -25,8 +25,8 @@ local Cutting: Types.CuttingConfig = {
 	LooseSeconds = 8, -- loose critters hop in place this long, then run off
 	GrabRadius = 4, -- studs
 
-	BigStealAt = 50, -- "BIG STEAL!" banner
-	ServerToastAt = 100, -- server-wide toast naming only the cutter
+	BigStealAt = 25, -- "BIG STEAL!" banner (the biggest steal from a full free line is 50)
+	ServerToastAt = 50, -- server-wide toast naming only the cutter
 }
 
 return deepFreeze(Cutting)

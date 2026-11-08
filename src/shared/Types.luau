@@ -92,15 +92,16 @@ export type CongaStep = {
 export type LineConfig = {
 	Conga: { CongaStep }, -- ascending MinLength
 	MaxCapacity: number,
-	RebirthLeashBonus: number,
 	LongerLeashMultiplier: number,
 	BaseWalkSpeed: number,
 	SlowPerCritter: number,
 	MinSpeedFactor: number,
+	SpeedLeadSeconds: number, -- walk-speed changes apply this long after they're announced (Shared/WalkSpeedSync)
 	Spacing: { [SizeClass]: number },
 	Path: LinePathConfig,
 	Render: LineRenderConfig,
 	Banners: { number }, -- own line lengths that fire a banner (spec 4.3, 7.4)
+	FullLineBannerMin: number, -- "FULL LINE!" when a line at least this long reaches its own capacity
 }
 
 export type LinePathConfig = {
@@ -145,6 +146,7 @@ export type ThrowConfig = {
 	Range: number,
 	Cooldown: number,
 	CrittersPerThrow: number,
+	CooldownMin: number,
 	RateLimitSlack: number,
 	RateLimitBurst: number,
 	TargetRangeSlack: number,
@@ -244,6 +246,7 @@ export type RebirthConfig = {
 	CoinGrowth: number,
 	CoinBonus: number,
 	LPBonus: number,
+	CooldownCut: number, -- seconds off the throw cooldown per rebirth, down to Throw.CooldownMin
 	RequiredBiome: string,
 }
 

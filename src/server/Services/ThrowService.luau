@@ -3,8 +3,9 @@
 --
 -- A throw is checked in this order; the first failure rejects it and is counted under its reason:
 --   payload       target isn't a finite Vector3, or golden isn't a boolean
---   rate          the ThrowBait token bucket is empty (1 per Cooldown − RateLimitSlack s, burst RateLimitBurst)
---   cooldown      less than Cooldown − RateLimitSlack s since this player's last accepted throw
+--   rate          the ThrowBait token bucket is empty (1 per own cooldown − RateLimitSlack s, burst RateLimitBurst)
+--   cooldown      less than own cooldown − RateLimitSlack s since this player's last accepted throw
+--                 (own cooldown = LineRules.ThrowCooldown(rebirths): 0.8 s, 0.05 s less per rebirth, at least 0.5 s)
 --   noCharacter   no live character
 --   notInBiome    the server-side position isn't in a biome (the hub, a gate, a pen)
 --   locked        the player hasn't unlocked that biome
@@ -23,6 +24,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript)
 local Net = require(Shared:WaitForChild("Net") :: ModuleScript)
+local LineRules = require(Shared:WaitForChild("LineRules") :: ModuleScript)
 local Odds = require(Shared:WaitForChild("Odds") :: ModuleScript)
 local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript)
 
@@ -143,11 +145,11 @@ local function onThrowBait(player: Player, target: any, golden: any)
 		return
 	end
 	local now = os.clock()
-	if not session.ThrowBucket:Take(now) then
+	local cooldown = LineRules.ThrowCooldown(session.Rebirths) - Config.Throw.RateLimitSlack
+	if not session.ThrowBucket:Take(now, cooldown) then
 		reject(player, "rate")
 		return
 	end
-	local cooldown = Config.Throw.Cooldown - Config.Throw.RateLimitSlack
 	if now - session.LastThrowAt < cooldown then
 		reject(player, "cooldown", string.format("%.2f s after the last", now - session.LastThrowAt))
 		return

@@ -73,12 +73,34 @@ def summary(label, p, res):
     return out
 
 
+# econ_sim's defaults before the line cap was approved (economy.md v0.4). The sim's DEFAULTS are now the approved
+# set-up (v0.5), so "today" in this script's tables means this pre-cap baseline.
+PRE_CAP = dict(
+    leash=[10, 15, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200],
+    leash_costs=[30, 80, 200, 500, 2_000, 6_000, 15_000, 40_000, 250_000, 700_000, 2e6, 5e6],
+    line_cap=300,
+    conga=[[1, 1], [10, 1.25], [25, 1.5], [50, 2], [100, 3], [150, 3.5], [200, 4], [300, 5]],
+    pen_rate=0.0006,
+    rebirth_lp=[1e6, 2.5e6, 5e6, 12.5e6, 30e6],
+    rebirth_coins=[20e6, 200e6, 800e6, 3e9, 12e9],
+    rebirth_leash=10,
+    rebirth_cooldown=0.0,
+    slow_per_critter=0.0015,
+)
+
+
 def base_today():
-    return copy.deepcopy(es.DEFAULTS)
+    p = copy.deepcopy(es.DEFAULTS)
+    for k, v in PRE_CAP.items():
+        if k == "leash_costs":
+            p["cost"]["Leash"] = list(v)
+        else:
+            p[k] = copy.deepcopy(v)
+    return p
 
 
 def cap100(conga_top=4.0):
-    p = copy.deepcopy(es.DEFAULTS)
+    p = base_today()
     p["leash"] = [10, 15, 20, 30, 40, 50, 65, 80, 100]          # current levels 1-9, track ends at 100
     p["cost"]["Leash"] = [30, 80, 200, 500, 2_000, 6_000, 15_000, 40_000]
     p["line_cap"] = 150
@@ -98,7 +120,7 @@ def calibrate(p, targets=(164, 425, 866), players=150, kw=None):
         for _ in range(9):
             mid = (lo * hi) ** 0.5
             lp[k] = mid
-            p["rebirth_lp"] = lp[:k + 1] + [x * mid / es.DEFAULTS["rebirth_lp"][k] for x in es.DEFAULTS["rebirth_lp"][k + 1:]]
+            p["rebirth_lp"] = lp[:k + 1] + [x * mid / PRE_CAP["rebirth_lp"][k] for x in PRE_CAP["rebirth_lp"][k + 1:]]
             t = med(run(p, players, **kw), f"rebirth_{k + 1}")[0]
             if t != t or t > targets[k]:
                 hi = mid
@@ -106,12 +128,12 @@ def calibrate(p, targets=(164, 425, 866), players=150, kw=None):
                 lo = mid
         lp[k] = (lo * hi) ** 0.5
         print(f"  rebirth {k + 1}: LP need {lp[k]:,.0f}", flush=True)
-    scale = lp[2] / es.DEFAULTS["rebirth_lp"][2]
-    p["rebirth_lp"] = lp[:3] + [x * scale for x in es.DEFAULTS["rebirth_lp"][3:]]
+    scale = lp[2] / PRE_CAP["rebirth_lp"][2]
+    p["rebirth_lp"] = lp[:3] + [x * scale for x in PRE_CAP["rebirth_lp"][3:]]
     res = run(p, players, **kw)
     coins = [held(res, k) / 1.25 for k in (1, 2, 3)]
-    cscale = coins[2] / es.DEFAULTS["rebirth_coins"][2]
-    p["rebirth_coins"] = coins + [x * cscale for x in es.DEFAULTS["rebirth_coins"][3:]]
+    cscale = coins[2] / PRE_CAP["rebirth_coins"][2]
+    p["rebirth_coins"] = coins + [x * cscale for x in PRE_CAP["rebirth_coins"][3:]]
     return p
 
 

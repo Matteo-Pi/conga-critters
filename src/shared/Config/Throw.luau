@@ -7,10 +7,13 @@ local deepFreeze = require(script.Parent.Parent.Util.DeepFreeze)
 
 local Throw: Types.ThrowConfig = {
 	Range = 45, -- studs
-	Cooldown = 0.8, -- seconds; the client waits this long between throws
+	Cooldown = 0.8, -- seconds between throws before any rebirth; each rebirth cuts Rebirth.CooldownCut
+	CooldownMin = 0.5, -- the cooldown never goes below this (economy.md 4.6)
 	CrittersPerThrow = 1, -- events (Critter Rush) can raise this
-	RateLimitSlack = 0.1, -- the server accepts a throw (Cooldown − RateLimitSlack) s after the last accepted one
-	RateLimitBurst = 3, -- ThrowBait token bucket: refills 1 per (Cooldown − RateLimitSlack) s, holds this many
+	-- The server accepts a throw (the player's own cooldown − RateLimitSlack) s after their last accepted one, and the
+	-- ThrowBait token bucket refills 1 per that many seconds, holding RateLimitBurst (LineRules.ThrowCooldown).
+	RateLimitSlack = 0.1,
+	RateLimitBurst = 3,
 	TargetRangeSlack = 6, -- target may be up to Range + this from the server-side position
 
 	JoinDelay = 1.8, -- server adds the critter to the line this long after the bait lands

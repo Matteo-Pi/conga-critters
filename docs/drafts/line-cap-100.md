@@ -1,6 +1,6 @@
 ---
 title: "Draft: lines capped at 100 (150 with Longer Leash)"
-status: "Proposed, for the developer's review. Nothing here is built, and economy.md and the spec are unchanged except for a pointer row in each decisions log."
+status: "Approved by the developer on 2026-11-08 with one change (walk speed slows 0.3% a critter, not 0.15%) and applied: economy.md v0.5, spec v0.23, Config. Kept as the record of the comparison; economy.md is the master for every number."
 date: 2026-11-08
 ---
 

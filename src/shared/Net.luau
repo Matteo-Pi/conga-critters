@@ -47,7 +47,7 @@ export type CritterSpawnedPayload = {
 export type RateLimit = { Per: number, Burst: number }
 
 Net.RateLimits = table.freeze({
-	ThrowBait = table.freeze({
+	ThrowBait = table.freeze({ -- ThrowService passes each player's own (cooldown − slack) as `per`
 		Per = Config.Throw.Cooldown - Config.Throw.RateLimitSlack,
 		Burst = Config.Throw.RateLimitBurst,
 	}),
@@ -84,18 +84,19 @@ function Net.Event(name: string): RemoteEvent
 	return parent:WaitForChild(name) :: RemoteEvent
 end
 
--- A token bucket. `Take(now)` spends a token and returns true, or returns false when empty.
+-- A token bucket. `Take(now, per?)` spends a token and returns true, or returns false when empty. `per` overrides the
+-- refill time for this call (a player's own throw cooldown, LineRules.ThrowCooldown); the limit's Per otherwise.
 export type Bucket = {
-	Take: (self: Bucket, now: number) -> boolean,
+	Take: (self: Bucket, now: number, per: number?) -> boolean,
 	Tokens: number,
 	Updated: number,
 }
 
 function Net.NewBucket(limit: RateLimit): Bucket
 	local bucket = { Tokens = limit.Burst, Updated = -math.huge } :: Bucket
-	function bucket.Take(self: Bucket, now: number): boolean
+	function bucket.Take(self: Bucket, now: number, per: number?): boolean
 		if self.Updated > -math.huge then
-			self.Tokens = math.min(limit.Burst, self.Tokens + (now - self.Updated) / limit.Per)
+			self.Tokens = math.min(limit.Burst, self.Tokens + (now - self.Updated) / (per or limit.Per))
 		end
 		self.Updated = now
 		if self.Tokens >= 1 then

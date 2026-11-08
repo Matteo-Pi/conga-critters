@@ -8,7 +8,7 @@ local Types = require(script.Parent.Parent.Types)
 local deepFreeze = require(script.Parent.Parent.Util.DeepFreeze)
 
 local Income: Types.IncomeConfig = {
-	PenRate = 0.0006,
+	PenRate = 0.0005,
 	TwoXCoinsMultiplier = 2,
 	VIPMultiplier = 1.1,
 	FriendBoostPerFriend = 0.1, -- coins only, not LP

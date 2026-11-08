@@ -18,6 +18,11 @@ StarterPlayer.CameraMaxZoomDistance = Config.Camera.CameraMaxZoomDistance
 -- Characters don't collide with each other (spec 16). Before any player joins, so no character spawns without it.
 require(script:WaitForChild("CharacterCollision") :: ModuleScript).Start()
 
+-- Walk speed is applied in the shared simulation, never written by the server directly (Shared/WalkSpeedSync,
+-- spec 9.1). A new character starts at the base speed, which an empty line walks at.
+StarterPlayer.CharacterWalkSpeed = Config.Line.BaseWalkSpeed
+require(Shared:WaitForChild("WalkSpeedSync") :: ModuleScript).Start()
+
 -- Boot order: the services table in spec 9.2. Modules not listed here still load, after these, alphabetically.
 local ORDER = {
 	"DataService",

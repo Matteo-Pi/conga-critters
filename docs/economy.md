@@ -1,8 +1,8 @@
 ---
 title: "Conga Critters: economy"
 repo_path: /docs/economy.md
-economy_version: 0.4
-date: 2026-11-07
+economy_version: 0.5
+date: 2026-11-08
 status: "Tuned by simulation. Retune from live data after the soft launch (section 9)."
 spec: "/docs/spec.md v0.7"
 model: "/tools/econ_sim.py: 1,000 simulated players, 22 hours of play each, seed 7"
@@ -14,6 +14,7 @@ developer_decisions:
   - "2026-11-07: the rainbow trail needs only the Common, Uncommon and Rare species in Rainbow"
   - "2026-11-07: a missed day pauses the daily ladder"
   - "2026-11-07: every open decision in section 11 settled. Changed: the default auto-release filter keeps Golden critters, and players can switch auto-release off from launch"
+  - "2026-11-08: lines capped at 100, 150 with Longer Leash; rebirth cuts the throw cooldown instead of adding capacity; walk speed slows 0.3% a critter (11.10)"
 ---
  
 # Conga Critters: economy
@@ -39,7 +40,7 @@ Spec v0.3 and later include all of these.
 | LP per rarity | 1, 3, 10, 40, 200, 2,000 | 1, 2, 4, 8, 16, 32 | Developer's decision: LP rewards effort and coins keep the jackpots (1.1) |
 | Jungle gate | 400 LP | 1,000 LP | 400 opened the Jungle at about 6.5 min; the target is 10–15 |
 | Snowy Peaks gate | 20,000 LP | 50,000 LP | Opens on day 2 |
-| Pen income | Value × 0.02 coins per second | Value × 0.0006 coins per second | Keeps the pen to at most about a third of coins, so playing beats idling |
+| Pen income | Value × 0.02 coins per second | Value × 0.0005 coins per second (0.0006 until v0.5) | Keeps the pen to at most about a third of coins, so playing beats idling |
 | Upgrade costs | One formula per track | A cost for each level (5.5) | Income jumps ×10 at each biome, so no single formula fits. Early levels stay cheap; late ones match Snowy Peaks income |
 | Storage track costs | 200 × 3^(n−2) | 2,000 up to 8,000,000 | Each level arrives about when storage starts to fill |
 | Rebirth needs | 1,000,000 × 4^r LP | A table of LP and coins (5.7): 1M LP and 20M coins for the first | Cycles of about 2.7, 4.4 and 7.4 hours. Without a coin need, coins piled up with nothing to buy |
@@ -57,9 +58,9 @@ Everything else in the spec's sections 4–6 is unchanged. Section 5 restates it
  
 ### 1.1 Goals
 1. **A fast, generous first 15 minutes.** A delivery and an upgrade within the first minute or two, an Epic within minutes, and a new biome at 10–15 minutes.
-2. **Playing beats idling.** Pen income stays under about 40% of an active player's coins. It peaks at 33% in the model.
+2. **Playing beats idling.** Pen income stays under about 40% of an active player's coins. It peaks at 36% in the model (38% with every pass).
 3. **Lead Power rewards effort; coins carry the luck.** A Mythic is worth 2,000 Commons in coins but only 32 in LP. Lucky rolls pay out in coins, while gates and rebirths follow how much a player has delivered.
-4. **Paying speeds things up but never skips.** All the speed passes together make progress about a quarter faster (6.5). Three Golden Bait add about a twentieth of one Snowy Peaks run's LP.
+4. **Paying speeds things up but never skips.** All the speed passes together make progress about a fifth to a quarter faster (6.5). Three Golden Bait add about a twentieth of one Snowy Peaks run's LP.
 5. **Nothing owned skips the climb.** The biome cap (spec 4.5.3) holds favourites, steals and grabs to the highest biome the player has unlocked.
 6. **Numbers a 9-year-old can read.** Short, rounded numbers with K, M and B (section 8).
 ### 1.2 Pacing targets and results
@@ -72,12 +73,12 @@ The model's median free player; 6.1 has the spread. An engaged player (60 minute
 | First upgrade | Within 90 s | 0.5 min | 1 | Yes |
 | First Rare | Within 1 min | Throw 6 (fixed tutorial roll) | 1 | Yes |
 | First Epic | Within 8 min | 2.1 min (90% by 5.0 min) | 1 | Yes |
-| Jungle unlocked | 10–15 min | 12.0 min | 1 | Yes |
-| First 100-critter line | Second or third session | 23.4 min | 1 (second session) | Yes |
-| Snowy Peaks unlocked | Day 2–3 | 56.6 min | 2 | Yes |
-| First rebirth | Day 5–7 | 164 min | 6 | Yes |
-| Second rebirth | About day 14 (new) | 425 min | 15 | Yes |
-| Third rebirth | About day 30 (new) | 866 min | 29 | Yes |
+| Jungle unlocked | 10–15 min | 12.1 min | 1 | Yes |
+| First 100-critter line | Second or third session | 22.8 min | 1 (second session) | Yes |
+| Snowy Peaks unlocked | Day 2–3 | 56.5 min | 2 | Yes |
+| First rebirth | Day 5–7 | 169 min | 6 | Yes |
+| Second rebirth | About day 14 (new) | 426 min | 15 | Yes |
+| Third rebirth | About day 30 (new) | 856 min | 29 | Yes |
 | Every Normal species in the 3 launch biomes | Weeks 2–3 | Needs one trip back to the Meadow (6.7) | 7–8 | Yes, with a trip back |
  
 Rebirth ships at the soft launch with the 3 free favourite slots (11.9), as the model assumes. Players on an hour a day reach their first rebirth on day 3.
@@ -88,7 +89,7 @@ The model plays like a focused player who never wastes a second. Real players ar
 | Assumption | Value |
 |---|---|
 | Play | 15-minute sessions; 30 minutes a day typical, 60 engaged |
-| Throwing | 1 throw a second while filling the line (the 0.8 s cooldown plus aiming) |
+| Throwing | 1 throw a second while filling the line (the 0.8 s cooldown plus aiming); 0.05 s less per rebirth, down to 0.7 s at the 0.5 s cooldown (4.6) |
 | Walking | 120 studs from pen to gate. Band centres 65, 200 and 335 studs into the biome. The first run starts 40 studs from the Meadow gate |
 | Overheads | 1.8 s for the last critter to join, and 8 s a run for turning, crowds and the delivery summary |
 | Band | Whichever band gives the most coins per second |
@@ -102,13 +103,13 @@ The model plays like a focused player who never wastes a second. Real players ar
 Run time:
 ```
 run = d ÷ v                                          walk out
-    + capacity × 1 s + 1.8 s                         fill the line
-    + d ÷ (v × max(0.6, 1 − 0.0015 × capacity))      walk home, slowed by the line
+    + capacity × t + 1.8 s                           fill the line; t = 1 s, less the rebirth cut (4.6)
+    + d ÷ (v × max(0.6, 1 − 0.003 × capacity))       walk home, slowed by the line
     + capacity ÷ max(8, capacity ÷ 4)                deliver
     + 8 s                                            overheads
 d = pen to gate + band depth (studs); v = walk speed (studs per second)
 ```
-For example, a 200-critter Snowy Peaks run in the Far band at walk speed 28 takes about 253 s (4.2 min).
+For example, a 100-critter Snowy Peaks run in the Far band at walk speed 28, before any rebirth, takes about 153 s (2.6 min).
  
 ## 3. Currencies and flows
 | Currency | Comes from | Goes to | Reset by rebirth? |
@@ -179,17 +180,19 @@ banking on leave:       coins += value(c) × coinBoost;      no m and no LP
  
 ### 4.5 Pen income and best pen income
 ```
-pen income per second      = 0.0006 × coinBoost × sum of value(c) over the critters in pen slots
-best pen income per minute = 60 × 0.0006 × coinBoost × sum of the S highest value(c) among pen and storage critters
+pen income per second      = 0.0005 × coinBoost × sum of value(c) over the critters in pen slots
+best pen income per minute = 60 × 0.0005 × coinBoost × sum of the S highest value(c) among pen and storage critters
                              S = the number of pen slots
 ```
 Best pen income is what the pen would earn if it held the player's most valuable critters. Moving critters can't lower it; only releasing them can. Daily coin rewards and Stand prices use it (5.9).
  
-### 4.6 Capacity and walk speed
+### 4.6 Capacity, walk speed and throw cooldown
 ```
-capacity  = min(300, floor((leash capacity + 10 × rebirths) × (1.5 with Longer Leash)))
-walkSpeed = (20 + speed level − 1) × max(0.6, 1 − 0.0015 × line length)
+capacity      = min(150, floor(leash capacity × (1.5 with Longer Leash)))    100 free, 150 with Longer Leash
+walkSpeed     = (20 + speed level − 1) × max(0.6, 1 − 0.003 × line length)
+throwCooldown = max(0.5, 0.8 − 0.05 × rebirths)                              seconds
 ```
+Rebirth adds no capacity (since v0.5). A walk-speed change reaches the game 0.3 s after the line changes (spec 9.1).
  
 ### 4.7 Rebirth needs
 ```
@@ -199,8 +202,8 @@ need(k) = need(k − 1) × 2.5 for LP and × 4 for coins, for k > 5
  
 ### 4.8 Worked examples
 - **First delivery:** 10 Meadow critters, including the fixed Uncommon and Rare. At worst the other 8 are Normal Commons: (8 × 5 + 15 + 50) × 1.25 = 131.25 coins. On average it pays about 310 coins and 23 LP. Leash level 2 costs 30, so the first upgrade is always affordable (spec 2.1).
-- **A full Snowy Peaks run:** 200 critters at bait level 15 in the Far band (λ = 4.02), Conga ×4, no boosts: about 3.4M coins and 44,500 LP in about 4.2 minutes.
-- **A full pen:** 30 Snowy Peaks Legendaries (value 100,000 each) earn 30 × 100,000 × 0.0006 = 1,800 coins a second, or 108,000 a minute.
+- **A full Snowy Peaks run:** 100 critters at bait level 15 in the Far band (λ = 4.02), Conga ×3, no boosts: about 1.3M coins and 16,700 LP in about 2.6 minutes (v0.4's 200-critter run at ×4: 3.4M coins and 44,500 LP in 4.2 minutes).
+- **A full pen:** 30 Snowy Peaks Legendaries (value 100,000 each) earn 30 × 100,000 × 0.0005 = 1,500 coins a second, or 90,000 a minute.
 ## 5. Tuned values
  
 ### 5.1 Rarities
@@ -237,12 +240,12 @@ Averaged over Golden Hour, Golden is 2.67% and Rainbow 0.117%, which adds 6.4% t
 - Every biome, event biomes included, has at least one species of each rarity and uses the same rarity weights (spec 5.3).
 - Launch biomes have 3 Common, 2 Uncommon and 2 Rare species, and 1 each of Epic, Legendary and Mythic (spec 5.4).
 ### 5.4 Conga multiplier and line
-| Length at least | 1 | 10 | 25 | 50 | 100 | 150 | 200 | 300 |
-|---|---|---|---|---|---|---|---|---|
-| Multiplier | ×1 | ×1.25 | ×1.5 | ×2 | ×3 | ×3.5 | ×4 | ×5 |
+| Length at least | 1 | 10 | 25 | 50 | 75 | 100 | 150 |
+|---|---|---|---|---|---|---|---|
+| Multiplier | ×1 | ×1.25 | ×1.5 | ×2 | ×2.5 | ×3 | ×3.5 |
  
-- Capacity: at most 300. Longer Leash ×1.5; +10 per rebirth (4.6).
-- Walk speed slows by 0.15% per critter in the line, down to ×0.60 at 267 or more (spec 4.3).
+- Capacity: at most 100, 150 with Longer Leash (×1.5). Rebirth adds no capacity (4.6).
+- Walk speed slows by 0.3% per critter in the line: ×0.85 at 50, ×0.70 at 100, and ×0.60 (the floor) at 134 or more (spec 4.3).
 - Delivery: max(8, L₀ ÷ 4) critters a second (spec 4.5.2).
 ### 5.5 Upgrade tracks
 Every level's effect and cost. Level 1 is free. A blank cell means the track has no such level.
@@ -258,20 +261,20 @@ Every level's effect and cost. Level 1 is free. A blank cell means the track has
 | 7 | 65 | 6,000 | ×1.72 | 10,000 | 18 | 25,000 | 26 | 40,000 | 200 | 8,000,000 |
 | 8 | 80 | 15,000 | ×1.84 | 30,000 | 20 | 70,000 | 27 | 150,000 | | |
 | 9 | 100 | 40,000 | ×1.96 | 80,000 | 22 | 200,000 | 28 | 500,000 | | |
-| 10 | 125 | 250,000 | ×2.08 | 250,000 | 24 | 600,000 | | | | |
-| 11 | 150 | 700,000 | ×2.20 | 700,000 | 26 | 1,500,000 | | | | |
-| 12 | 175 | 2,000,000 | ×2.32 | 2,000,000 | 28 | 4,000,000 | | | | |
-| 13 | 200 | 5,000,000 | ×2.44 | 5,000,000 | 30 | 10,000,000 | | | | |
+| 10 | | | ×2.08 | 250,000 | 24 | 600,000 | | | | |
+| 11 | | | ×2.20 | 700,000 | 26 | 1,500,000 | | | | |
+| 12 | | | ×2.32 | 2,000,000 | 28 | 4,000,000 | | | | |
+| 13 | | | ×2.44 | 5,000,000 | 30 | 10,000,000 | | | | |
 | 14 | | | ×2.56 | 12,000,000 | | | | | | |
 | 15 | | | ×2.68 | 30,000,000 | | | | | | |
-| **Total** | | **8,013,810** | | **50,074,600** | | **16,406,700** | | **704,125** | | **12,222,000** |
+| **Total** | | **63,810** | | **50,074,600** | | **16,406,700** | | **704,125** | | **12,222,000** |
  
-All five tracks cost 87,421,235 coins in total. Rebirth resets every track, Storage included (spec 4.7). Show costs with `Format.luau` (section 8), for example "250K" and "2M".
+All five tracks cost 79,471,235 coins in total. The Leash track stops at level 9 (100) since v0.5. Rebirth resets every track, Storage included (spec 4.7). Show costs with `Format.luau` (section 8), for example "250K" and "2M".
  
 ### 5.6 Pen and storage
 | Setting | Value |
 |---|---|
-| Pen income | 0.0006 coins per second for each coin of value in a pen slot (4.5) |
+| Pen income | 0.0005 coins per second for each coin of value in a pen slot (4.5) |
 | Pen slots | 6, up to 30 with the Pen track |
 | Storage limit | 50, up to 200 with the Storage track; +100 with the Big Storage pass |
 | Overflow | Legendary, Mythic, Rainbow and bound (Golden Bait) critters can go up to 50 over the limit when storage is full |
@@ -284,16 +287,16 @@ Why the default filter is what it is. In Snowy Peaks, at bait level 15 in the Fa
 ### 5.7 Rebirth
 | Rebirth | LP needed | Coins needed | Model median | Day |
 |---|---|---|---|---|
-| 1st | 1,000,000 | 20,000,000 | 164 min | 6 |
-| 2nd | 2,500,000 | 200,000,000 | 425 min | 15 |
-| 3rd | 5,000,000 | 800,000,000 | 866 min | 29 |
-| 4th | 12,500,000 | 3,000,000,000 | Beyond the model | — |
-| 5th | 30,000,000 | 12,000,000,000 | Beyond the model | — |
+| 1st | 750,000 | 12,500,000 | 169 min | 6 |
+| 2nd | 1,700,000 | 140,000,000 | 426 min | 15 |
+| 3rd | 3,700,000 | 480,000,000 | 856 min | 29 |
+| 4th | 9,500,000 | 1,900,000,000 | Beyond the model | — |
+| 5th | 23,000,000 | 7,700,000,000 | Beyond the model | — |
 | Each later one | Previous × 2.5 | Previous × 4 | — | — |
  
 - Rebirth also needs Snowy Peaks unlocked and an empty line (spec 4.7).
 - Coins reset at rebirth, so the coin need works like a price.
-- Each rebirth gives +15% coins and LP and +10 leash capacity, added together (4.3, 4.6).
+- Each rebirth gives +15% coins and LP, added together, and cuts the throw cooldown by 0.05 s, to at least 0.5 s (4.3, 4.6). A full 100-line fills about 5 s faster per rebirth.
 - Adding a new top tier changes these numbers (7.2).
 ### 5.8 Index
 | Completed in one biome | Reward |
@@ -342,7 +345,7 @@ Event biomes can open with a Golden Hour-style event for their first weekend to 
 ### 5.11 Prices and earnings
 | Item | Price | Creator gets (70%) | DevEx value | Sales to repay £250 (about $330) | Effect in the model |
 |---|---|---|---|---|---|
-| 2x Coins (pass, P0) | 399 R$ | 279 R$ | $1.06 | 311 | Rebirth 1 7% sooner |
+| 2x Coins (pass, P0) | 399 R$ | 279 R$ | $1.06 | 311 | Rebirth 1 5% sooner |
 | Longer Leash (pass, P0) | 299 R$ | 209 R$ | $0.80 | 415 | Rebirth 1 19% sooner |
 | VIP (pass, P1) | 249 R$ | 174 R$ | $0.66 | 499 | +10% coins; not modelled |
 | Auto-Bait (pass, P2) | 499 R$ | 349 R$ | $1.33 | 249 | Not modelled (6.5) |
@@ -365,76 +368,76 @@ From `python3 tools/econ_sim.py --players 1000 --hours 22 --seed 7 --favourites`
 | First delivery | 0.5 | 0.5 | 0.5 | 100% | 1 | 1 |
 | First upgrade | 0.5 | 0.5 | 0.5 | 100% | 1 | 1 |
 | First Epic | 0.5 | 2.1 | 5.0 | 100% | 1 | 1 |
-| Jungle unlocked | 10.3 | 12.0 | 13.7 | 100% | 1 | 1 |
-| First 100-critter line | 18.5 | 23.4 | 26.9 | 100% | 1 | 1 |
-| Snowy Peaks unlocked | 53.1 | 56.6 | 60.5 | 100% | 2 | 1 |
-| All upgrades maxed | 127 | 145 | 160 | 93% | 5 | 3 |
-| Rebirth 1 | 155 | 164 | 178 | 100% | 6 | 3 |
-| Snowy Peaks again | 199 | 209 | 223 | 100% | 7 | 4 |
-| Rebirth 2 | 414 | 425 | 441 | 100% | 15 | 8 |
-| Rebirth 3 | 833 | 866 | 918 | 100% | 29 | 15 |
+| Jungle unlocked | 10.4 | 12.1 | 13.8 | 100% | 1 | 1 |
+| First 100-critter line | 18.4 | 22.8 | 26.5 | 100% | 1 | 1 |
+| Snowy Peaks unlocked | 53.3 | 56.5 | 60.0 | 100% | 2 | 1 |
+| All upgrades maxed | 141 | 157 | 167 | 47% | 6 | 3 |
+| Rebirth 1 | 163 | 169 | 180 | 100% | 6 | 3 |
+| Snowy Peaks again | 207 | 214 | 227 | 100% | 8 | 4 |
+| Rebirth 2 | 415 | 426 | 447 | 100% | 15 | 8 |
+| Rebirth 3 | 841 | 856 | 889 | 100% | 29 | 15 |
  
-7% of players rebirth before maxing every track; rebirth doesn't need maxed upgrades. Rebirth is in the game from the soft launch, as modelled (11.9).
+53% of players rebirth before maxing every track (the last Bait and Pen levels); rebirth doesn't need maxed upgrades. Rebirth is in the game from the soft launch, as modelled (11.9).
  
 ### 6.2 Income and pen share
 | Minutes of play | 0–15 | 15–30 | 30–60 | 60–120 | 120–240 | 240–600 |
 |---|---|---|---|---|---|---|
-| Coins a minute (median) | 3.4K | 32.7K | 76.4K | 887K | 755K | 1.54M |
-| Pen share of coins | 3% | 6% | 10% | 13% | 23% | 33% |
+| Coins a minute (median) | 3.3K | 33.9K | 73.4K | 616K | 526K | 1.07M |
+| Pen share of coins | 3% | 5% | 9% | 14% | 26% | 36% |
  
-- The jump at 60–120 is Snowy Peaks (×100). The dip at 120–240 is the first rebirth (median minute 164), after which players start again in the Meadow with their bonuses.
-- Pen share stays at 34% or less in every scenario (the highest is all passes, 240–600 minutes), under the 40% target.
+- The jump at 60–120 is Snowy Peaks (×100). The dip at 120–240 is the first rebirth (median minute 169), after which players start again in the Meadow with their bonuses.
+- Pen share stays at 38% or less in every scenario (the highest is all passes, 240–600 minutes), under the 40% target. Pen income was lowered from 0.0006 to 0.0005 in v0.5 to keep it there: shorter lines pay less per run.
 ### 6.3 Upgrade timeline, first cycle
 The median minute at which each level is bought.
  
 | Track | L2 | L3 | L4 | L5 | L6 | L7 | L8 | L9 | L10 | L11 | L12 | L13 | L14 | L15 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Leash | 1 | 1 | 2 | 4 | 8 | 13 | 16 | 21 | 46 | 62 | 72 | 93 | | |
-| Bait | 1 | 2 | 3 | 7 | 13 | 15 | 19 | 26 | 41 | 61 | 69 | 87 | 121 | 145 |
-| Pen | 1 | 3 | 5 | 11 | 14 | 18 | 24 | 33 | 59 | 66 | 81 | 110 | | |
-| Speed | 1 | 3 | 6 | 13 | 15 | 22 | 29 | 54 | | | | | | |
-| Storage | 10 | 17 | 37 | 64 | 76 | 101 | | | | | | | | |
+| Leash | 1 | 1 | 2 | 4 | 8 | 13 | 16 | 20 | | | | | | |
+| Bait | 1 | 2 | 3 | 7 | 13 | 15 | 19 | 26 | 42 | 60 | 69 | 89 | 132 | 157 |
+| Pen | 1 | 3 | 5 | 11 | 14 | 18 | 24 | 33 | 58 | 65 | 81 | 116 | | |
+| Speed | 1 | 3 | 6 | 13 | 15 | 22 | 29 | 51 | | | | | | |
+| Storage | 10 | 17 | 37 | 63 | 75 | 102 | | | | | | | | |
  
-- At least one upgrade every few minutes for the first half hour. The quiet stretch is minutes 33–41, in the Jungle, when level 10 prices (250,000) arrive. Snowy Peaks income then pays for the rest.
-- Storage levels arrive as storage fills: level 2 at minute 10, level 7 at minute 101. With the default filter keeping Golden critters (5.6), storage fills sooner than this timeline assumed, so watch the storage-full signal in 9.2.
+- At least one upgrade every few minutes for the first half hour. The Leash track is maxed (100) at minute 20. The quiet stretch is minutes 33–42, in the Jungle, when the Bait and Pen tracks' level 10 prices arrive. Snowy Peaks income then pays for the rest.
+- Storage levels arrive as storage fills: level 2 at minute 10, level 7 at minute 102. With the default filter keeping Golden critters (5.6), storage fills sooner than this timeline assumed, so watch the storage-full signal in 9.2.
 ### 6.4 Band choice
 | Biome | Near | Mid | Far |
 |---|---|---|---|
-| Sunny Meadow | 92% | 8% | 0% |
-| Jungle | 8% | 36% | 56% |
-| Snowy Peaks | 0% | 0% | 100% |
+| Sunny Meadow | 100% | 0% | 0% |
+| Jungle | 42% | 58% | 0% |
+| Snowy Peaks | 93% | 7% | 0% |
  
-While lines are short, the Meadow rewards the short walk. From the Jungle on, the deep, risky Far band wins, as pillar 2 intends (spec 1.2). If live data shows most Snowy Peaks lines coming from the Near band, walking is too slow or cuts cost too much.
+**Open (11.11).** Before v0.5 the deep, risky Far band won from the Jungle on, as pillar 2 intends (spec 1.2): Snowy Peaks was 100% Far. With lines capped at 100 a run is short, so the extra walk to the Far band (270 studs each way) costs more than its luck earns, and the model stays near the gate. Comparison runs (200 players, free): cap 100 with the old 0.15% slowdown gives Snowy Peaks Near 68%, Mid 32%; with the approved 0.3% it is Near 93%, Mid 7%; the old set-up (cap 300) gave Mid 95%, Far 5% in the same short run. Pacing doesn't move, but pillar 2 doesn't hold in the model. Levers: more luck in the Mid and Far bands (`Biomes`), shorter band depths, or less slowdown. If live data shows most Snowy Peaks lines coming from the Near band, this is why.
  
 ### 6.5 Passes
 | Scenario | Jungle | Snowy Peaks | All maxed | Rebirth 1 | Rebirth 2 | Rebirth 3 | Rebirth 1 vs free |
 |---|---|---|---|---|---|---|---|
-| Free | 12.0 | 56.6 | 145 | 164 | 425 | 866 | — |
-| 2x Coins | 10.4 | 52.2 | 101 | 152 | 407 | 817 | 7% sooner |
-| Longer Leash | 9.6 | 45.6 | 119 | 132 | 339 | 726 | 19% sooner |
-| All passes, 8 favourites | 9.1 | 43.1 | 85 | 121 | 319 | 639 | 26% sooner |
+| Free | 12.1 | 56.5 | 157 | 169 | 426 | 856 | — |
+| 2x Coins | 10.5 | 53.3 | 115 | 161 | 413 | 837 | 5% sooner |
+| Longer Leash | 9.3 | 45.4 | 128 | 137 | 349 | 708 | 19% sooner |
+| All passes, 8 favourites | 8.3 | 43.3 | 95 | 131 | 335 | 678 | 23% sooner |
  
-- Longer Leash is the strongest pass. LP decides gates and rebirths, and LP per run grows with line length and the Conga multiplier. 2x Coins mostly speeds up upgrades, which stop mattering once they're maxed.
-- All passes together reach each rebirth about 26% sooner: faster, never a skip (spec 0.3, rule 6).
-- VIP, Friend Boost and Auto-Bait aren't in these runs. Try VIP with `--set extra_coin=1.1` and Friend Boost with values up to `1.3`. Before Update 2, run `--set throw_every=0.8` to see Auto-Bait's effect, since it throws at the 0.8 s cooldown.
+- Longer Leash is the strongest pass. LP decides gates and rebirths, and LP per run grows with line length and the Conga multiplier (150 at ×3.5 against the free player's 100 at ×3). 2x Coins mostly speeds up upgrades, which stop mattering once they're maxed; with the shorter Leash track that happens sooner, so 2x Coins dropped from 7% to 5%.
+- All passes together reach each rebirth 21–23% sooner: faster, never a skip (spec 0.3, rule 6).
+- VIP, Friend Boost and Auto-Bait aren't in these runs. Try VIP with `--set extra_coin=1.1` and Friend Boost with values up to `1.3`. Before Update 2, run `--set throw_every=0.8` to see Auto-Bait's effect, since it throws at the player's cooldown (0.8 s before any rebirth).
 ### 6.6 Rebirth, favourites and coins
-- Coins held at rebirth (median): 25.2M against a need of 20M, 266M against 200M, and 808M against 800M. LP and coins run out at about the same time, so neither piles up.
-- Income just before each rebirth: 1.13M, 1.77M and 2.69M coins a minute.
+- Coins held at rebirth (median): 17.1M against a need of 12.5M, 155M against 140M, and 535M against 480M. LP and coins run out at about the same time, so neither piles up.
+- Income just before each rebirth: 730K, 1.21M and 1.86M coins a minute.
 - Favourites (300 players, seed 7):
 | Favourites kept | Back to Snowy Peaks after rebirth 1 | Pen share in the first 10 min after it | Rebirth 2 |
 |---|---|---|---|
-| 0 | 46.8 min | 3% | 430 min |
-| 3 (free) | 44.7 min | 40% | 425 min |
-| 8 (both passes) | 43.9 min | 53% | 425 min |
+| 0 | 47.6 min | 3% | 436 min |
+| 3 (free) | 45.3 min | 40% | 425 min |
+| 8 (both passes) | 44.8 min | 51% | 424 min |
  
-Favourites make the pen matter straight after a rebirth: a big share of a small Meadow income. The biome cap keeps the amount small, so they save 2–3 minutes of the climb and don't move rebirth 2. Buying favourite slots never gives a big jump in income.
+Favourites make the pen matter straight after a rebirth: a big share of a small Meadow income. The biome cap keeps the amount small, so they save 2–3 minutes of the climb and bring rebirth 2 about 11 minutes (2.5%) sooner. Buying favourite slots never gives a big jump in income.
  
 ### 6.7 Index (Normal sets)
 | Normal set | p10 | p50 | p90 | Done within 22 h |
 |---|---|---|---|---|
-| Snowy Peaks | 62 | 74 | 107 | 100% |
-| Jungle | 18 | 36 | 199 | 100% |
-| Sunny Meadow | 7 | 170 | 863 | 52% |
+| Snowy Peaks | 62 | 78 | 117 | 100% |
+| Jungle | 18 | 35 | 207 | 100% |
+| Sunny Meadow | 7 | 177 | 861 | 54% |
  
 - The model leaves the Meadow at minute 12 and only passes back through after rebirths, so finding its Mythic is left to luck.
 - A player who goes back with bait level 15 and throws in the Far band finds a Normal-variant Mythic in 0.103% of throws, at about 47 throws a minute: about 21 minutes on average. The Legendary takes about 3.
@@ -454,6 +457,8 @@ Golden and Rainbow sets, at bait level 15 in the Far band (about 47 throws a min
 - A full Rainbow set takes a median of about 200 hours per biome, so almost nobody will finish one. Golden Bait barely helps: a Rainbow Mythic is 1 in about 8,100 Golden Bait.
 - So the rainbow trail needs only the Common, Uncommon and Rare species (decided 2026-11-07; 11.10): a median of about 7 hours per biome (90% within 15). The rarer Rainbows stay in the Index as bragging rights.
 ### 6.8 Adding a new top tier
+**Refit needed (v0.5).** This section was fitted to the v0.4 numbers (lines up to 300, rebirth needs 1M, 2.5M, 5M LP). LP now comes about a quarter slower and the 3rd rebirth needs 3.7M, so a 4M gate would sit above it and open later than planned. Refit the gate and the later needs with the new numbers before Fri 11 Dec (scaling by about 0.74 suggests a gate near 3M); `tools/line_cap_100.py` runs the scenarios. The v0.4 results:
+
 Free player, 250 players, seed 11, median minutes. Tier 4 pays ×1,000 coins and ×125 LP.
  
 | Setup | Rebirth 2 | Rebirth 3 | Tier 4 first unlocked | Coins held at rebirth 3 |
@@ -565,7 +570,7 @@ The analytics come from spec 9.9.
 | Jungle unlock, median minutes (funnel step 9) | 10–15 | Lower the Jungle gate (1,000) | Raise it |
 | Snowy Peaks unlock, median minutes | 45–90 | Lower its gate (50,000) | Raise it |
 | First rebirth, median minutes | 150–210 (day 5–7) | Lower the first rebirth's LP need | Raise it |
-| Pen share of coin sources, after the first hour | 10–40% | Raise the pen rate (0.0006) | Lower it |
+| Pen share of coin sources, after the first hour | 10–40% | Raise the pen rate (0.0005) | Lower it |
 | Coins held at rebirth ÷ coin need (median) | 1.0–1.5 | Below 1.0, coins hold rebirth back: lower the coin need | Coins pile up: raise the coin need |
 | Minute each upgrade level is bought, against 6.3 | Within ±50% | Lower that track's costs from there on | Raise them |
 | Storage-full events and automatic releases of Epics, per hour played | A few an hour from the second hour | — | Lower the Storage track's costs, or let the default filter release Golden Commons to Rares (5.6) |
@@ -582,18 +587,19 @@ The analytics come from spec 9.9.
 | `Variants` | Chances, value multipliers, Golden Bait and Golden Hour multipliers, caps | 5.2 |
 | `Biomes` | Id, tier or tier-matched, gate LP, coin and LP multipliers, depth-band luck | 5.3 |
 | `Critters` | Species: id, biome, rarity and size class (spec 5.4) | — |
-| `Line` | Conga table, the 300 cap, the rebirth leash bonus, the Longer Leash multiplier, walk-speed constants | 5.4, 4.6 |
+| `Line` | Conga table, the 150 cap (`MaxCapacity`), the Longer Leash multiplier, walk-speed constants and the 0.3 s lead for speed changes, banners | 5.4, 4.6 |
 | `Delivery` | Delivery rate; banking on leave | 5.4, 4.4 |
 | `Upgrades` | Effect and cost of every level of the five tracks | 5.5 |
-| `Income` | Pen rate; 2x Coins, VIP and Friend Boost multipliers | 5.6, 4.3 |
+| `Income` | Pen rate (0.0005); 2x Coins, VIP and Friend Boost multipliers | 5.6, 4.3 |
 | `Pen` | Starting slots, storage limits, overflow, the default auto-release setting and filter (`Enabled = true`, `UpTo = 3`, `IncludeGolden = false`), the warning threshold | 5.6 |
-| `Rebirth` (new) | LP and coin needs, growth after the table, bonuses | 5.7 |
+| `Rebirth` (new) | LP and coin needs, growth after the table, bonuses, `CooldownCut = 0.05` | 5.7 |
 | `Index` (new) | Bonus per Normal set (no cap), cosmetic rewards | 5.8 |
 | `Daily` | Ladder, best-pen-income minutes and floors, Stand stock and price | 5.9 |
 | `Events` | Golden Hour, Critter Rush and `/luck` limits | 5.10 |
 | `Monetisation` | Pass and product ids, prices and effects; the 60-minute Server Luck queue | 5.11 |
 | `Shields` | Shield lengths, the 60-minute limit on daily shield time and the 30-minute limit on an active shield (spec 4.11) | — |
-| `Cutting` | `CutTierGap`: unset (off) at launch | 9.2; spec 4.4.2 |
+| `Cutting` | `CutTierGap`: unset (off) at launch; `BigStealAt = 25`, `ServerToastAt = 50` | 9.2; spec 4.4.2, 4.4.5 |
+| `Throw` | `Cooldown = 0.8`, `CooldownMin = 0.5`; the rate limit uses each player's own cooldown | 4.6; spec 4.1 |
  
 ## 11. Decisions
 Every decision here has been settled by the developer; the spec's decisions log (spec 16) records each one. Add new open decisions here as they come up.
@@ -605,11 +611,12 @@ Every decision here has been settled by the developer; the spec's decisions log 
 | 11.3 | Index coin bonuses | Decided: no cap (developer, 2026-11-06) | 5.8, 6.10 |
 | 11.4 | Daily coin rewards and Stand prices use best pen income | Decided: yes (developer, 2026-11-07). Closes the empty-pen exploit | 4.5, 5.9 |
 | 11.5 | Storage track costs: 2,000 up to 8,000,000 | Decided: accepted as a starting point; retune from the storage-full signal (developer, 2026-11-07) | 5.5, 9.2 |
-| 11.6 | Longer Leash is the strongest pass (19% sooner) but costs less than 2x Coins (7% sooner) | Decided: keep 299 R$ for the soft launch (developer, 2026-11-07). If it far outsells 2x Coins, try 349–399 R$ at the day-14 review | 6.5 |
+| 11.6 | Longer Leash is the strongest pass (19% sooner) but costs less than 2x Coins (5% sooner since v0.5; 7% before) | Decided: keep 299 R$ for the soft launch (developer, 2026-11-07). If it far outsells 2x Coins, try 349–399 R$ at the day-14 review | 6.5 |
 | 11.7 | Event biomes after their event: close them or keep them open | Decided: close them when the event ends and bring them back for later events, so their Index sets stay completable (developer, 2026-11-07). Their critters keep paying in pens | 7.1, 7.4 |
-| 11.8 | Tier 4's date and gate | Decided: pencilled in for Fri 11 Dec, with a 4M LP gate and the raised rebirth needs in 6.8; confirm at the day-14 review (developer, 2026-11-07) | 7.2, 7.3 |
+| 11.8 | Tier 4's date and gate | Decided: pencilled in for Fri 11 Dec, with a 4M LP gate and the raised rebirth needs in 6.8; confirm at the day-14 review (developer, 2026-11-07). The gate and needs need a refit for v0.5 (6.8) | 7.2, 7.3 |
 | 11.9 | Rebirth at the soft launch or in Update 1. Without it, engaged players (an hour a day) max every upgrade around day 3 with nothing left to buy, right in the D2–7 window | Decided: ship rebirth, with the 3 free favourite slots, at the soft launch (developer, 2026-11-07) | 1.2, 6.1; spec 4.7 |
-| 11.10 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth cuts the throw cooldown (−0.05 s, at least 0.5 s) instead of adding +10 capacity; refitted rebirth needs, Conga steps and pen income | **Proposed** (developer's brief, 2026-11-08). Draft and model runs in `docs/drafts/line-cap-100.md`; nothing in this document changes until approved | 4.6, 5.4–5.7, 6 |
+| 11.10 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth cuts the throw cooldown (−0.05 s, at least 0.5 s) instead of adding +10 capacity; refitted rebirth needs, Conga steps and pen income | Decided (developer, 2026-11-08): approved as drafted in `docs/drafts/line-cap-100.md`, with one change: walk speed slows 0.3% a critter (not 0.15%), floor ×0.60. Longer Leash stays 299 R$. That change moved no pacing target by more than 3.1% | 4.6, 5.4–5.7, 6 |
+| 11.11 | The Far band no longer wins with lines capped at 100 (6.4) | **Open**: pacing is fine, but pillar 2 (deep, risky runs pay best) doesn't hold in the model. Pick a lever (band luck, band depth or slowdown) before the soft launch, or accept it and watch band choice live | 6.4; spec 1.2 |
 | 11.10 | A full Rainbow set takes about 200 hours of throwing per biome | Decided: the rainbow trail needs only the Common, Uncommon and Rare species, about 7 hours (developer, 2026-11-07) | 6.7; spec 4.8 |
  
 ## 12. Changelog
@@ -617,6 +624,7 @@ Every decision here has been settled by the developer; the spec's decisions log 
 - 0.2 (2026-11-06): review pass. Index coin bonuses have no cap (6.10). Bound critters are never auto-released and can overflow storage (5.6). Golden and Rainbow set times (6.7). Open decisions 11.9 (rebirth at the soft launch) and 11.10 (the Rainbow reward). Rates are shown per minute (8.3). A signal for stronger players picking on new ones (9.2). The simulation gains `extra_coin` and drops the Index cap; its results are unchanged.
 - 0.3 (2026-11-07): the developer's decisions. Rebirth and favourites ship at the soft launch, as modelled (1.2, 6.1, 7.3, 11.9). The rainbow trail needs only the Common to Rare species (5.8, 6.7, 11.10). A missed day pauses the daily ladder (5.9). The tier rule for cutting is a Config lever, off at launch (9.2, 10). No numbers changed, so the simulation wasn't re-run.
 - 0.4 (2026-11-07): every open decision settled (section 11, now "Decisions"). The default auto-release filter keeps Golden critters (`IncludeGolden = false`), and players can switch auto-release off from launch. Storage now fills in about 15 minutes for 50 slots in Snowy Peaks instead of 24, and 60 for 200 instead of 100, worked out by hand because the simulation doesn't model storage (5.6). New signals for storage and the auto-release switch (9.2). Event biomes close after their events (7.1, 7.4). The Longer Leash review is on the day-14 calendar (7.3). No simulated numbers changed, so the simulation wasn't re-run.
+- 0.5 (2026-11-08): lines capped at 100, 150 with Longer Leash (11.10). The Leash track stops at level 9; rebirth cuts the throw cooldown by 0.05 s (at least 0.5 s) instead of adding capacity; Conga steps 1, 10, 25, 50, 75, 100, 150; walk speed slows 0.3% a critter; pen income 0.0005; rebirth needs refitted (750K LP and 12.5M coins for the first). Re-run at 1,000 players: rebirths at 169, 426 and 856 min. New open item 11.11: the Far band no longer wins (6.4). Tier 4's numbers need a refit (6.8).
 ## Sources
 - `/docs/spec.md` v0.7, and the research handoff (`claude/roblox-viral-game-research-handoff-2026-11-06.md` in the project).
 - Roblox Creator Hub, "Roblox Developer Exchange Program": https://create.roblox.com/docs/production/monetization/developer-exchange

@@ -91,6 +91,16 @@ function PlayerStateService.SetGoldenBait(player: Player, count: number): ()
 	end
 end
 
+-- Rebirths so far. RebirthService sets it from C01-M9; until then only the `rebirths` debug command does. The
+-- `Rebirths` attribute lets the client show its own throw cooldown (LineRules.ThrowCooldown).
+function PlayerStateService.SetRebirths(player: Player, rebirths: number): ()
+	local session = PlayerStateService.Get(player)
+	if session and rebirths == rebirths and rebirths >= 0 and rebirths < math.huge then
+		session.Rebirths = math.floor(rebirths)
+		player:SetAttribute("Rebirths", session.Rebirths)
+	end
+end
+
 function PlayerStateService.AddDebugUnlock(player: Player, biomeId: string): ()
 	local session = PlayerStateService.Get(player)
 	if session then
@@ -126,6 +136,7 @@ local function onPlayerAdded(player: Player)
 	if session then
 		player:SetAttribute("LP", session.LP)
 		player:SetAttribute("GoldenBait", session.GoldenBait)
+		player:SetAttribute("Rebirths", session.Rebirths)
 	end
 end
 

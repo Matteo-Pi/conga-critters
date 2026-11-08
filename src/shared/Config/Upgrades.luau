@@ -26,11 +26,7 @@ local Upgrades: Types.UpgradesConfig = {
 			{ 50, 2000 },
 			{ 65, 6000 },
 			{ 80, 15000 },
-			{ 100, 40000 },
-			{ 125, 250000 },
-			{ 150, 700000 },
-			{ 175, 2000000 },
-			{ 200, 5000000 },
+			{ 100, 40000 }, -- the top: free lines stop at 100 (150 with Longer Leash), economy.md 5.5
 		}),
 		Bait = track("Bait", {
 			{ 1.00, 0 },

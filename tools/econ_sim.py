@@ -43,29 +43,30 @@ DEFAULTS = dict(
     bands=[["Near", 65, 1.0], ["Mid", 200, 1.25], ["Far", 335, 1.5]],
     pen_to_gate=120, first_pen_to_gate=40,          # studs
     base_speed=20, throw_every=1.0, join_delay=1.8, overhead=8.0,
+    slow_per_critter=0.003, min_speed_factor=0.6,  # walk speed x max(floor, 1 - slow x line length)
     cut_chance=0.12, cut_max_share=0.5, beginner_shield=300,
-    conga=[[1, 1], [10, 1.25], [25, 1.5], [50, 2], [100, 3], [150, 3.5], [200, 4], [300, 5]],
-    line_cap=300, luck_cap=10,
+    conga=[[1, 1], [10, 1.25], [25, 1.5], [50, 2], [75, 2.5], [100, 3], [150, 3.5]],
+    line_cap=150, luck_cap=10,                      # 100 free (the Leash track), 150 with Longer Leash
     # ---- upgrades (5.5): cost[track][n - 2] is the price of level n
-    leash=[10, 15, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200],
+    leash=[10, 15, 20, 30, 40, 50, 65, 80, 100],
     bait_step=0.12,
     cost=dict(
-        Leash=[30, 80, 200, 500, 2_000, 6_000, 15_000, 40_000, 250_000, 700_000, 2e6, 5e6],
+        Leash=[30, 80, 200, 500, 2_000, 6_000, 15_000, 40_000],
         Bait=[50, 150, 400, 1_000, 3_000, 10_000, 30_000, 80_000, 250_000, 700_000, 2e6, 5e6, 12e6, 30e6],
         Pen=[100, 300, 800, 2_500, 8_000, 25_000, 70_000, 200_000, 600_000, 1.5e6, 4e6, 10e6],
         Speed=[75, 250, 800, 3_000, 10_000, 40_000, 150_000, 500_000],
         Storage=[2_000, 20_000, 200_000, 1e6, 3e6, 8e6],   # only its cost is modelled
     ),
     # ---- pen income (5.6), rebirth (5.7), Index (5.8), Golden Bait (5.9)
-    pen_rate=0.0006,                                # coins/s per coin of value in a pen slot
+    pen_rate=0.0005,                                # coins/s per coin of value in a pen slot
     rebirth_tier=2,                                 # tiers index that rebirth needs (Snowy Peaks)
-    rebirth_lp=[1e6, 2.5e6, 5e6, 12.5e6, 30e6],
-    rebirth_coins=[20e6, 200e6, 800e6, 3e9, 12e9],
+    rebirth_lp=[750e3, 1.7e6, 3.7e6, 9.5e6, 23e6],
+    rebirth_coins=[12.5e6, 140e6, 480e6, 1.9e9, 7.7e9],
     rebirth_growth_lp=2.5, rebirth_growth_coins=4,  # each rebirth after the table
-    rebirth_bonus=0.15, rebirth_leash=10,
-    # per-rebirth gains besides the bonus (all 0 today; docs/drafts/line-cap-100.md compares them)
+    rebirth_bonus=0.15, rebirth_leash=0,            # capacity per rebirth: 10 until 2026-11-08, now none
+    # per-rebirth gains besides the bonus (economy.md 5.7; docs/drafts/line-cap-100.md compared them)
     rebirth_speed=0, rebirth_speed_max=0,           # walk speed +n per rebirth, at most +max
-    cooldown=0.8, rebirth_cooldown=0.0, cooldown_min=0.5,  # throw cooldown (inside throw_every) − n per rebirth
+    cooldown=0.8, rebirth_cooldown=0.05, cooldown_min=0.5,  # throw cooldown (inside throw_every) − n per rebirth
     rebirth_luck=0.0,                               # bait luck +n per rebirth (before the band's factor)
     rebirth_pen=0,                                  # pen slots +n per rebirth
     leash_pass_x=1.5,                               # Longer Leash multiplier
@@ -74,7 +75,7 @@ DEFAULTS = dict(
     golden_bait_per_hour=4,                         # daily ladder + Stand, per hour played
 )
  
-TRACK_MAX = {"Leash": 13, "Bait": 15, "Pen": 13, "Speed": 9, "Storage": 7}   # with DEFAULTS
+TRACK_MAX = {"Leash": 9, "Bait": 15, "Pen": 13, "Speed": 9, "Storage": 7}   # with DEFAULTS
 
 
 def track_max(p):
@@ -125,7 +126,7 @@ def rebirth_needs(p, r):
  
  
 def run_time(p, cap, dist, speed, rebirths=0):
-    slow = max(0.6, 1 - 0.0015 * cap)
+    slow = max(p["min_speed_factor"], 1 - p["slow_per_critter"] * cap)
     deliver = cap / max(8, cap / 4)
     return (dist / speed + cap * throw_every(p, rebirths) + p["join_delay"]
             + dist / (speed * slow) + deliver + p["overhead"])

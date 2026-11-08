@@ -23,6 +23,7 @@ local UserInputService = game:GetService("UserInputService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript)
 local Net = require(Shared:WaitForChild("Net") :: ModuleScript)
+local LineRules = require(Shared:WaitForChild("LineRules") :: ModuleScript)
 
 local Controllers = script.Parent
 local CritterFx = require(Controllers:WaitForChild("CritterFx") :: ModuleScript)
@@ -54,6 +55,11 @@ end
 local function attributeNumber(name: string, default: number): number
 	local value = localPlayer:GetAttribute(name)
 	return if type(value) == "number" then value else default
+end
+
+-- This player's throw cooldown: 0.8 s, 0.05 s less per rebirth, at least 0.5 s (the server checks the same rule).
+local function ownCooldown(): number
+	return LineRules.ThrowCooldown(attributeNumber("Rebirths", 0))
 end
 
 local function isFull(): boolean
@@ -149,7 +155,7 @@ local function overOurButton(): boolean
 end
 
 local function tryThrow(mode: "forward" | "pointer")
-	if os.clock() - lastThrowAt < Config.Throw.Cooldown then
+	if os.clock() - lastThrowAt < ownCooldown() then
 		return
 	end
 	local root = liveRoot()
@@ -298,7 +304,7 @@ local function refresh()
 		setState("hidden")
 	elseif isFull() then
 		setState("full")
-	elseif os.clock() - lastThrowAt < Config.Throw.Cooldown then
+	elseif os.clock() - lastThrowAt < ownCooldown() then
 		setState("cooldown")
 	else
 		setState("ready")

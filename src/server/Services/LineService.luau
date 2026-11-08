@@ -3,9 +3,12 @@
 --
 -- One line per owner id: a player's UserId, or a negative id for a debug leader (spec 9.10). A player's entries are
 -- the session's own table (PlayerStateService), so the line ends with the session. Rules (shared LineRules):
---   capacity  = min(MaxCapacity, floor((leash capacity + RebirthLeashBonus × rebirths) × (Longer Leash ? ×1.5 : 1)))
+--   capacity  = min(MaxCapacity, floor(leash capacity × (Longer Leash ? ×1.5 : 1)))   (rebirth adds none)
 --   room      = capacity − length − critters on their way
---   walkSpeed = Speed track value × max(0.6, 1 − 0.0015 × length), set on the Humanoid by the server
+--   walkSpeed = Speed track value × max(MinSpeedFactor, 1 − SlowPerCritter × length). For players it is announced
+--               through WalkSpeedSync (applied SpeedLeadSeconds later in the shared simulation, so the client never
+--               mispredicts); the server never writes a player's Humanoid.WalkSpeed. Debug leaders, which no client
+--               predicts, get it set directly.
 --
 -- Server paths (9.5): each leader's ground position is recorded ServerSampleHz times a second into a shared Path;
 -- `FollowerPositions` places the followers from it (for cuts, C01-M5). Clients keep their own paths for drawing.
@@ -26,6 +29,7 @@ local Config = require(Shared:WaitForChild("Config") :: ModuleScript)
 local LineRules = require(Shared:WaitForChild("LineRules") :: ModuleScript)
 local Net = require(Shared:WaitForChild("Net") :: ModuleScript)
 local Path = require(Shared:WaitForChild("Path") :: ModuleScript)
+local WalkSpeedSync = require(Shared:WaitForChild("WalkSpeedSync") :: ModuleScript)
 
 local PlayerStateService = require(script.Parent:WaitForChild("PlayerStateService") :: ModuleScript)
 
@@ -74,8 +78,8 @@ local function rebuildOffsets(line: Line)
 end
 
 -- Pure capacity rule, so checks can test it without a player.
-function LineService.CapacityFor(leashLevel: number, rebirths: number, longerLeash: boolean): number
-	return LineRules.Capacity(leashLevel, rebirths, longerLeash)
+function LineService.CapacityFor(leashLevel: number, longerLeash: boolean): number
+	return LineRules.Capacity(leashLevel, longerLeash)
 end
 
 function LineService.Capacity(player: Player): number
@@ -83,7 +87,7 @@ function LineService.Capacity(player: Player): number
 	if not session then
 		return 0
 	end
-	return LineRules.Capacity(session.Upgrades.Leash, session.Rebirths, session.LongerLeash)
+	return LineRules.Capacity(session.Upgrades.Leash, session.LongerLeash)
 end
 
 local function capacityOf(line: Line): number
@@ -144,13 +148,17 @@ function LineService.WalkSpeedOf(ownerId: number): number
 	return LineRules.WalkSpeed(speedLevel, #line.Entries)
 end
 
+-- Players: announce the speed (WalkSpeedSync). While an earlier change is pending this does nothing, and the next
+-- sample() (ServerSampleHz) tries again, so changes within one lead time are merged into the next announcement.
 local function applyWalkSpeed(line: Line)
+	local speed = LineService.WalkSpeedOf(line.OwnerId)
+	if line.Player then
+		WalkSpeedSync.Announce(line.Player, speed)
+		return
+	end
 	local _, humanoid = character(line)
-	if humanoid then
-		local speed = LineService.WalkSpeedOf(line.OwnerId)
-		if math.abs(humanoid.WalkSpeed - speed) > 1e-3 then
-			humanoid.WalkSpeed = speed
-		end
+	if humanoid and math.abs(humanoid.WalkSpeed - speed) > 1e-3 then
+		humanoid.WalkSpeed = speed
 	end
 end
 

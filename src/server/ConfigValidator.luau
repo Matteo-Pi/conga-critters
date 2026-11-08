@@ -166,8 +166,15 @@ function ConfigValidator.Collect(live: boolean): { string }
 			table.insert(problems, `Throw: {key} must be positive`)
 		end
 	end
-	if throw.RateLimitSlack < 0 or throw.RateLimitSlack >= throw.Cooldown then
-		table.insert(problems, "Throw: RateLimitSlack must be at least 0 and below Cooldown")
+	if not positive(throw.CooldownMin) or throw.CooldownMin > throw.Cooldown then
+		table.insert(problems, "Throw: CooldownMin must be positive and at most Cooldown")
+	end
+	-- The rate limit uses each player's own cooldown (LineRules.ThrowCooldown), which can fall to CooldownMin.
+	if throw.RateLimitSlack < 0 or throw.RateLimitSlack >= throw.CooldownMin then
+		table.insert(problems, "Throw: RateLimitSlack must be at least 0 and below CooldownMin")
+	end
+	if Config.Rebirth.CooldownCut < 0 then
+		table.insert(problems, "Rebirth: CooldownCut must be 0 or more")
 	end
 	if throw.RunInSeconds + throw.EatSeconds > throw.JoinDelay then
 		table.insert(problems, "Throw: RunInSeconds + EatSeconds must fit inside JoinDelay")
@@ -208,6 +215,21 @@ function ConfigValidator.Collect(live: boolean): { string }
 			table.insert(problems, "Line: Conga steps need rising MinLength and positive multipliers")
 		end
 		lastMin = conga.MinLength
+	end
+	if not positive(line.SpeedLeadSeconds) then
+		table.insert(problems, "Line: SpeedLeadSeconds must be positive")
+	end
+	local leashLevels = Config.Upgrades.Tracks.Leash.Levels
+	local topLeash = leashLevels[#leashLevels].Value
+	if math.floor(topLeash * line.LongerLeashMultiplier) > line.MaxCapacity then
+		table.insert(problems, "Line: the top Leash level with Longer Leash must fit in MaxCapacity")
+	end
+	local lastBanner = 0
+	for _, banner in line.Banners do
+		if banner <= lastBanner or banner > line.MaxCapacity then
+			table.insert(problems, "Line: Banners must rise and stay within MaxCapacity")
+		end
+		lastBanner = banner
 	end
 	local speedLevels = Config.Upgrades.Tracks.Speed.Levels
 	if speedLevels[1].Value ~= line.BaseWalkSpeed then

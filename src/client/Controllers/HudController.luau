@@ -2,7 +2,9 @@
 -- HudController: interface (spec 7.1, 9.2).
 -- C01-M2: a plain line counter, "length / capacity", from the Player's `LineLen` and `LineCap` attributes.
 -- C01-M3: the Conga multiplier beside it (4.3), and a banner with confetti when the line first reaches each of
--- Config.Line.Banners (100, 200, 300; a clip moment, 7.4). Placeholder look until the UI pass (Sun 15 Nov); coins,
+-- Config.Line.Banners (50 and 100; a clip moment, 7.4), or "FULL LINE!" instead when a line of at least
+-- FullLineBannerMin reaches its own capacity (100 free, 150 with Longer Leash), so every player's top gets the same
+-- celebration. Placeholder look until the UI pass (Sun 15 Nov); coins,
 -- LP and the rest arrive with their milestones.
 
 local Players = game:GetService("Players")
@@ -81,7 +83,7 @@ local function confetti(parent: ScreenGui)
 	end)
 end
 
-local function banner(length: number)
+local function banner(length: number, title: string?)
 	local parent = gui
 	if not parent then
 		return
@@ -96,7 +98,7 @@ local function banner(length: number)
 	text.TextStrokeTransparency = 0.2
 	text.TextScaled = true
 	text.FontFace = FONT
-	text.Text = `{length}!  {multiplierText(LineRules.Conga(length))}`
+	text.Text = `{title or `{length}!`}  {multiplierText(LineRules.Conga(length))}`
 	text.Parent = parent
 	confetti(parent)
 	task.delay(2.4, function()
@@ -117,9 +119,13 @@ local function refresh()
 		mark.Text = multiplierText(multiplier)
 		mark.Visible = length > 0
 	end
-	for _, threshold in Config.Line.Banners do
-		if lastLength < threshold and length >= threshold then
-			banner(threshold)
+	if capacity >= Config.Line.FullLineBannerMin and lastLength < capacity and length >= capacity then
+		banner(length, "FULL LINE!")
+	else
+		for _, threshold in Config.Line.Banners do
+			if lastLength < threshold and length >= threshold then
+				banner(threshold)
+			end
 		end
 	end
 	lastLength = length

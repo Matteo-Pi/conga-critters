@@ -18,6 +18,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript)
+local LineRules = require(Shared:WaitForChild("LineRules") :: ModuleScript)
 local Odds = require(Shared:WaitForChild("Odds") :: ModuleScript)
 local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript)
 
@@ -299,7 +300,7 @@ local function lineReport(player: Player): string
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	return string.format(
-		"%s: line %d/%d, %d on the way, room %d; Leash %d, Speed %d, Longer Leash %s; walk speed %.3f (Humanoid %s); Golden Bait %d; %s",
+		"%s: line %d/%d, %d on the way, room %d; Leash %d, Speed %d, Longer Leash %s; walk speed %.3f (Humanoid %s); rebirths %d, throw cooldown %.2f s; Golden Bait %d; %s",
 		player.Name,
 		LineService.Length(player),
 		LineService.Capacity(player),
@@ -310,6 +311,8 @@ local function lineReport(player: Player): string
 		if session and session.LongerLeash then "on" else "off",
 		LineService.WalkSpeedOf(player.UserId),
 		if humanoid then string.format("%.3f", humanoid.WalkSpeed) else "none",
+		if session then session.Rebirths else 0,
+		LineRules.ThrowCooldown(if session then session.Rebirths else 0),
 		if session then session.GoldenBait else 0,
 		tutorial
 	)
@@ -343,7 +346,7 @@ local function raiseCapacity(player: Player, n: number): string
 	local levels = #Config.Upgrades.Tracks.Leash.Levels
 	local function lowestLevel(longer: boolean): number?
 		for level = session.Upgrades.Leash, levels do
-			if LineService.CapacityFor(level, session.Rebirths, longer) >= want then
+			if LineService.CapacityFor(level, longer) >= want then
 				return level
 			end
 		end
@@ -360,7 +363,9 @@ local function raiseCapacity(player: Player, n: number): string
 		LineService.SetLongerLeash(player, true)
 	end
 	LineService.SetLeashLevel(player, target)
-	return `fill: raised Leash to level {target}{if pass then " and turned Longer Leash on" else ""}; capacity {LineService.Capacity(player)}`
+	return `fill: raised Leash to level {target}{if pass then " and turned Longer Leash on" else ""}; capacity {LineService.Capacity(
+		player
+	)}`
 end
 
 register(
@@ -418,6 +423,24 @@ register("speed", "speed <player|me> <level>", "set the Speed level (upgrades ar
 end)
 
 register(
+	"rebirths",
+	"rebirths <player|me> <n>",
+	"set the rebirth count this session (rebirth arrives in C01-M9); sets the throw cooldown",
+	function(caller, args)
+		local player, err = findPlayer(caller, args[1])
+		if not player then
+			return `rebirths: {err}`
+		end
+		local n = tonumber(args[2])
+		if not n or n ~= n or n < 0 or n > 1000 then
+			return "rebirths: n must be 0 to 1000"
+		end
+		PlayerStateService.SetRebirths(player, n)
+		return lineReport(player)
+	end
+)
+
+register(
 	"longleash",
 	"longleash <player|me> <on|off>",
 	"own the Longer Leash pass this session (passes arrive in C01-M6)",
@@ -459,8 +482,8 @@ register(
 		end
 		local count = DebugLeaders.Set(k, biomeId, length)
 		local lengths: { string } = {}
-		for ownerId, length in LineService.Lines() do
-			table.insert(lengths, `{ownerId}: {length}`)
+		for ownerId, lineLength in LineService.Lines() do
+			table.insert(lengths, `{ownerId}: {lineLength}`)
 		end
 		table.sort(lengths)
 		return `leaders: {count} debug leaders; lines {table.concat(lengths, ", ")}`

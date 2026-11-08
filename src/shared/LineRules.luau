@@ -2,8 +2,9 @@
 -- LineRules: the conga line's pure rules (spec 4.3; economy.md 4.6), shared so the server, the HUD and the checks
 -- all use the same maths. Every number comes from Config/Line and Config/Upgrades.
 --
---   capacity  = min(MaxCapacity, floor((leash capacity + RebirthLeashBonus × rebirths) × (Longer Leash ? ×1.5 : 1)))
+--   capacity  = min(MaxCapacity, floor(leash capacity × (Longer Leash ? ×1.5 : 1)))      rebirth adds none
 --   walkSpeed = Speed track value × max(MinSpeedFactor, 1 − SlowPerCritter × length)
+--   cooldown  = max(Throw.CooldownMin, Throw.Cooldown − Rebirth.CooldownCut × rebirths)  seconds between throws
 --   conga     = the Multiplier of the last Conga step whose MinLength ≤ length (×1 below the first)
 
 local Config = require(script.Parent.Config)
@@ -14,11 +15,16 @@ local function level(levels: { any }, value: number): any
 	return levels[math.clamp(math.floor(value), 1, #levels)]
 end
 
-function LineRules.Capacity(leashLevel: number, rebirths: number, longerLeash: boolean): number
+function LineRules.Capacity(leashLevel: number, longerLeash: boolean): number
 	local leash = level(Config.Upgrades.Tracks.Leash.Levels, leashLevel).Value
-	local base = leash + Config.Line.RebirthLeashBonus * rebirths
 	local multiplier = if longerLeash then Config.Line.LongerLeashMultiplier else 1
-	return math.min(Config.Line.MaxCapacity, math.floor(base * multiplier))
+	return math.min(Config.Line.MaxCapacity, math.floor(leash * multiplier))
+end
+
+-- Seconds between this player's throws: each rebirth cuts Rebirth.CooldownCut, down to Throw.CooldownMin.
+function LineRules.ThrowCooldown(rebirths: number): number
+	local cut = Config.Rebirth.CooldownCut * math.max(0, math.floor(rebirths))
+	return math.max(Config.Throw.CooldownMin, Config.Throw.Cooldown - cut)
 end
 
 function LineRules.SpeedFactor(length: number): number

@@ -1,12 +1,12 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.22
+spec_version: 0.23
 date: 2026-11-08
-status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
+status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps; re-run for the 150 cap (v0.23), with checks 1 (drawn part) and 6–8 waiting for a focused Studio window. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
-  - "/docs/economy.md (v0.4): every tuning number, and the simulation behind them"
+  - "/docs/economy.md (v0.5): every tuning number, and the simulation behind them"
   - "/CHANGELOG.md"
 developer_decisions:
   - "2026-11-06: line cuts take the back half only"
@@ -75,7 +75,7 @@ Rules 1–7 come from the handoff (its section 0.5); rule 8 is new.
 | Item | Value |
 |---|---|
 | Hook | "Throw bait. Grow the longest animal conga line. Don't let anyone cut it." |
-| 5-second pitch | A 200-critter conga line snakes across the map while a rival sprints at its tail |
+| 5-second pitch | A 100-critter conga line snakes across the map while a rival sprints at its tail |
 | Genre | Collect → earn → upgrade simulator with a social steal; a fast follow on Throw Food For Animals and Steal An Egg (handoff F2, 6.2) |
 | Audience | Ages 9–15. English at launch; Portuguese (Brazil), Indonesian and Spanish later |
 | Platforms | Phones first (the performance floor), then PC, tablet and console |
@@ -153,7 +153,7 @@ Measured with the onboarding funnel (9.9). Everything is guided without text.
   - Phone: a big THROW button. It throws along the camera's forward direction to full range.
   - PC: left click. It throws at the mouse point, limited to range.
   - Console: right trigger. It throws along the camera's forward direction.
-- **Numbers:** range 45 studs; cooldown 0.8 s; one critter per throw (events can raise this).
+- **Numbers:** range 45 studs; cooldown 0.8 s, 0.05 s shorter per rebirth, never below 0.5 s (4.7); one critter per throw (events can raise this). The server checks each player's own cooldown and rate limit.
 - **A throw needs:** the player inside a biome they have unlocked; a landing point in the same biome; and line length plus critters on their way below the leash capacity.
 - **Bait:** Normal bait is free and unlimited. Golden Bait uses up one Golden Bait (4.2). The toggle appears once the player owns some.
 - **Client:** draws the arc and the bait at once, then sends `ThrowBait`. If the server rejects the throw, the bait vanishes in a small puff.
@@ -186,16 +186,16 @@ Worked rarity odds for checks (Normal bait):
 - The first time a species or variant joins a player's line, the Index records it (4.8) and a "NEW!" toast plays.
 ### 4.3 The conga line (C01-M3)
 - **State (server):** an ordered list of entries (species, variant, bound), a count of critters on their way, and the capacity.
-- **Capacity:** the leash level (5.5), plus 10 per rebirth, times 1.5 with the Longer Leash pass, rounded down. Never above **300**, the performance cap.
+- **Capacity:** the leash level (5.5: 10 up to **100**), times 1.5 with the Longer Leash pass, rounded down, so **150** at most. 150 is also the performance cap. Rebirth adds no capacity.
 - **Following:** followers walk the leader's exact path, breadcrumb by breadcrumb, rather than a straight line. If the leader jumps, walking or standing, a hop wave runs down the line from front to back (developer, 2026-11-08; it replaced hopping at the same spot).
 - **Spacing by size class:** S 2.2 studs, M 3.0 studs, L 4.0 studs.
-- **Walk speed:** (20 + Speed upgrades) × max(0.6, 1 − 0.0015 × length). A line of 100 gives ×0.85, 200 gives ×0.70, and 267 or more gives ×0.60. The server sets `Humanoid.WalkSpeed`.
+- **Walk speed:** (20 + Speed upgrades) × max(0.6, 1 − 0.003 × length). A line of 50 gives ×0.85, 100 gives ×0.70, and 134 or more gives ×0.60. A change applies 0.3 s after the line changes: the server announces it in the Player's `WalkSpeedPlan` attribute and the server and the player's client both set `Humanoid.WalkSpeed` inside the shared simulation (9.1), so the player's movement is never corrected.
 - **Conga multiplier:** applied to delivery coins and Lead Power. It is set by the line's length when delivery starts:
-| Length at least | 1 | 10 | 25 | 50 | 100 | 150 | 200 | 300 |
-|---|---|---|---|---|---|---|---|---|
-| Multiplier | ×1 | ×1.25 | ×1.5 | ×2 | ×3 | ×3.5 | ×4 | ×5 |
+| Length at least | 1 | 10 | 25 | 50 | 75 | 100 | 150 |
+|---|---|---|---|---|---|---|---|
+| Multiplier | ×1 | ×1.25 | ×1.5 | ×2 | ×2.5 | ×3 | ×3.5 |
  
-- The HUD shows length against capacity, and the current multiplier. Reaching 100, 200 and 300 fires a banner with confetti (a clip moment, 7.4).
+- The HUD shows length against capacity, and the current multiplier. Reaching 50 and 100 fires a banner with confetti (a clip moment, 7.4); a line of 100 or more that reaches its own capacity (100 free, 150 with Longer Leash) gets "FULL LINE!" instead, so free and pass players celebrate the same top.
 - **If the character dies** (it shouldn't; see 3.1): bound critters are banked as if the player had left (4.5.5), and the rest scatter as loose critters (4.4.4).
 - **If the player leaves:** see 4.5.5.
 ### 4.4 Line cutting: back half only (C01-M5)
@@ -203,7 +203,7 @@ Worked rarity odds for checks (Normal bait):
 #### 4.4.1 The rule
 - Walk through the back half of a rival's line and you cut it there. Everything behind the cut follows you.
 - Positions count from the leader; position 1 is right behind them. In a line of length L, positions ⌈L/2⌉ + 1 to L can be cut, and positions 1 to ⌈L/2⌉ never can. So no cut takes more than half.
-- Examples: in a line of 10, positions 6–10 are at risk. In a line of 300, positions 151–300.
+- Examples: in a line of 10, positions 6–10 are at risk. In a line of 150, positions 76–150.
 #### 4.4.2 When a cut happens
 The server checks ten times a second. A cut needs all of these:
  
@@ -236,7 +236,7 @@ The server checks ten times a second. A cut needs all of these:
 - Loose critters are also used when a line scatters after a death (4.3) and in the admin Stampede (4.10).
 #### 4.4.5 Feedback
 - **The cut:** a scissors burst and a "snip" sound at the cut point, then critters hop happily over to the cutter. Only the line is cut: never show harm to animals.
-- **Cutter:** a "+42!" banner. At 50 or more, "BIG STEAL!" with confetti. At 100 or more, a toast to the whole server that names only the cutter, for example "Ana made a 150-critter steal!" The victim is never named to the server.
+- **Cutter:** a "+42!" banner. At 25 or more, "BIG STEAL!" with confetti. At 50 or more, a toast to the whole server that names only the cutter, for example "Ana made a 60-critter steal!" The victim is never named to the server.
 - **Victim:** a short screen shake, a toast naming the cutter, and a 15 s immunity bubble. A Revenge marker on the cutter for 30 s is P1.
 - **Stats:** biggest steal, cuts made, times cut.
 #### 4.4.6 Why this is fair enough for 9–15-year-olds
@@ -322,11 +322,11 @@ After a delivered or banked critter has paid out, it goes through these steps in
 - **Unlocking a biome:** a fanfare, an arrow to the gate, and the biome's Index tab lights up. Any critters the player owns from that biome rise to full value (4.5.3).
 ### 4.7 Rebirth (C01-M9)
 - **Where:** a Rebirth button in the Upgrades screen opens the Rebirth screen. Until the player qualifies it shows their progress towards each need; once they do, the button glows.
-- **Needs:** Snowy Peaks unlocked; the LP and coins in economy.md 5.7 (1,000,000 LP and 20,000,000 coins for the first rebirth, rising with each one); and an empty line. Coins reset anyway, so the coin need works like a price.
+- **Needs:** Snowy Peaks unlocked; the LP and coins in economy.md 5.7 (750,000 LP and 12,500,000 coins for the first rebirth, rising with each one); and an empty line. Coins reset anyway, so the coin need works like a price.
 - **Resets:** coins, upgrades (Storage included), LP, and every critter in the pen and storage except favourites.
 - **Keeps:** favourites (4.5.9), the Index and its bonuses, passes, Golden Bait, stored shield time, cosmetics, the daily ladder and streak, stats and settings.
 - **Favourites afterwards:** they go back into the pen as far as its 6 slots allow, and any others go to storage. The biome cap (4.5.3) scales their value down until the player unlocks their biomes again.
-- **Gives, per rebirth (permanent and additive):** +15% coins and LP; +10 leash capacity, still within the 300 cap; and a crown shown above the player and on their pen sign (bronze, then silver, then gold).
+- **Gives, per rebirth (permanent and additive):** +15% coins and LP; a throw cooldown 0.05 s shorter, never below 0.5 s (4.1); and a crown shown above the player and on their pen sign (bronze, then silver, then gold).
 - A confirmation screen lists exactly what resets, which favourites stay and what the player gets. It points out any Golden Bait critters that will go, so the player can favourite them first.
 ### 4.8 Index (C01-M7)
 - At launch: 30 species × 3 variants (Normal, Golden and Rainbow) = 90 entries.
@@ -461,7 +461,7 @@ Always pair a rarity colour with an icon or label, so colour isn't the only cue.
 ### 5.5 Upgrade tracks
 | Track | Effect by level | Levels | Costs (every level in economy.md 5.5) |
 |---|---|---|---|
-| Leash | Capacity 10, 15, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200 | 13 | 30 for level 2, up to 5,000,000 for level 13 |
+| Leash | Capacity 10, 15, 20, 30, 40, 50, 65, 80, 100 | 9 | 30 for level 2, up to 40,000 for level 9 |
 | Bait | Luck × (1 + 0.12 × (n − 1)); ×2.68 at level 15 | 15 | 50 up to 30,000,000 |
 | Pen | 6 + 2 × (n − 1) slots; 30 at level 13 | 13 | 100 up to 10,000,000 |
 | Speed | Walk speed 20 + (n − 1); 28 at level 9 | 9 | 75 up to 500,000 |
@@ -493,7 +493,7 @@ Days assume 30 minutes of play a day. economy.md 1.2 compares each target with t
 | Pass | Price | Effect | Priority |
 |---|---|---|---|
 | 2x Coins | 399 R$ | Doubles coins from deliveries and pen income | P0 |
-| Longer Leash | 299 R$ | Leash capacity × 1.5, still capped at 300 | P0 |
+| Longer Leash | 299 R$ | Leash capacity × 1.5, so 150 at the top | P0 |
 | VIP | 249 R$ | +10% coins, a VIP tag and a gold pen fence. No Golden Bait (6.4) | P1 |
 | Auto-Bait | 499 R$ | Throws Normal bait automatically, at the normal cooldown, while in a biome with room in the line | P2 (Update 2) |
 | Big Storage | 149 R$ | +100 storage (4.5.7) | P1 |
@@ -512,9 +512,9 @@ Days assume 30 minutes of play a day. economy.md 1.2 compares each target with t
 - Nothing paid for can be stolen: Golden Bait critters are bound (4.2).
 - Shields block cutting both ways.
 - No pass or product changes walk speed, cut range or cooldowns.
-- Longer Leash and rebirth bonuses never take capacity past 300.
+- Longer Leash never takes capacity past 150, and rebirth adds none.
 - Favourite slots from passes stop at +5, and favourites follow the biome cap (4.5.3), so buying slots never gives a big income jump after a rebirth.
-- All the speed passes together make progress about a quarter faster, never a skip (economy.md 6.5).
+- All the speed passes together make progress about a fifth to a quarter faster, never a skip (economy.md 6.5).
 ### 6.4 Paid random items: compliance
 Roblox's policy (page updated 2026-10-15) covers random items bought with Robux, directly or through paid in-game currency, and paid items that improve the odds of random outcomes.
 1. **Odds before purchase.** The Golden Bait ×3 and Server Luck store entries each have an odds panel driven by `Odds.luau`. While any boost is active, every odds display shows the true, boosted odds. Luck applies to Golden Bait too, so its panel shows the odds for each depth band at the player's bait level (economy.md 4.1).
@@ -561,10 +561,10 @@ Required effects and sounds: a throw whoosh; a bait plop; dust as a critter runs
 ### 7.4 Clip moments
 Design these to be filmed; marketing uses real gameplay only.
 1. **The gate steal:** a long line's tail is cut just as its head reaches the safe hub.
-2. **Line milestones:** banners and confetti at 100, 200 and 300.
+2. **Line milestones:** banners and confetti at 50 and 100, and "FULL LINE!" at a full line.
 3. **BIG STEAL:** the banner and the server-wide toast.
 4. **A Mythic reveal,** with its burst and sound.
-5. **A 300-critter delivery** and its coin fountain.
+5. **A 150-critter delivery** and its coin fountain.
 6. **Stampede** chaos.
 Film with Roblox's developer Freecam (Shift+P, for accounts with edit access).
  
@@ -591,6 +591,7 @@ Film with Roblox's developer Freecam (Shift+P, for accounts with edit access).
   - In full release since 2026-07-09. For games with default avatars it gives engine-level movement anti-cheat: the server rejects invalid client movement.
   - It also turns on `StreamingEnabled`, deferred signals, `NextGenerationReplication`, the Input Action System for player scripts, and fixed simulation. Write code for those from the start: `WaitForChild` and nil checks for streamed instances, and no reliance on signals firing immediately.
   - Attributes are limited under Server Authority (64 per instance, with limited string sizes). Use attributes only for small values; line contents travel over remotes.
+  - Predicted properties (such as `Humanoid.WalkSpeed`) must not be written by the server outside the simulation: the client mispredicts, rolls back and replays, which shows as a nudge while walking and a replayed fall animation. Announce the change ahead in an attribute on an unpredicted instance and apply it with `RunService:BindToSimulation` on the server and the client (`WalkSpeedSync.luau`; 4.3, 16).
 - **Decision at the end of M3:** if Server Authority hurts movement feel, phone performance or the build, set `AuthorityMode` back to Automatic and log it in section 16. The game must work correctly either way. The server checks in 9.7 stay in both cases.
 - The map lives in the place file, not in Git, so save a dated `.rbxl` backup after each milestone.
 ### 9.2 Repo layout
@@ -609,7 +610,8 @@ src/
     Net.luau                   remote names, payload types, rate limits
     Odds.luau                  roll and display maths (server rolls, clients display)
     Path.luau                  breadcrumb path maths (server and clients)
-    LineRules.luau             capacity, walk speed, Conga multiplier, spacing (server and clients)
+    LineRules.luau             capacity, walk speed, Conga multiplier, spacing, throw cooldown (server and clients)
+    WalkSpeedSync.luau         walk speed applied inside the shared simulation (server and the local client)
     Zones.luau                 point-in-zone tests and zone classification
     Unlocks.luau               biome unlock rule and top tier (server and clients)
     Format.luau                number formatting
@@ -699,7 +701,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - **`LineSync`:** a joining client gets snapshots of every line. Throws send `append`, deliveries `removeFront`, and a cut sends fresh snapshots of both lines. Each line has its own sequence number. If a client sees a gap, it sends `RequestLineSync`.
 - **`PenSync` and `PenDisplay`** go out after any change to a player's pen or storage, at most twice a second per player. `PenSync` also answers `RequestPenSync` when the menu opens.
 - **Display state in attributes** (small values only):
-  - On each Player: `Coins`, `LP`, `LineLen`, `LineCap`, `GoldenBait`, `ShieldEndsAt`, `ShieldStored`, `PenIndex`.
+  - On each Player: `Coins`, `LP`, `LineLen`, `LineCap`, `GoldenBait`, `ShieldEndsAt`, `ShieldStored`, `PenIndex`, `Rebirths`, and `WalkSpeedPlan` (a Vector3: speed before, speed after, and the simulation time the change applies; 4.3).
   - On ReplicatedStorage: `EventId`, `EventEndsAt`, `ServerLuckEndsAt`, `ServerLuckBuyer`.
 - **Rules:** never trust numbers from a client; drop bad payloads silently and count them; never call a RemoteFunction from server to client.
 ### 9.5 Line simulation and rendering
@@ -720,7 +722,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - Moves every visible follower with one `workspace:BulkMoveTo` call per frame (`Enum.BulkMoveMode.FireCFrameChanged`).
 - Hop: height = |sin(t·ω + i·φ)| × h, plus a small side-to-side waddle, smoothed towards the target.
 - Level of detail: full detail within 80 studs; no particles from 80 to 200 studs; hidden beyond 200 studs (150 on phones).
-- Draws at most 900 followers on desktop: your own line first, then the nearest. On phones the cap is lifted for the real-phone test (`MaxDrawnPhone` 4,000, more than 13 lines of 300), so only the distance level of detail limits them; a real phone cap is set from the test's numbers before launch (16).
+- Draws at most 900 followers on desktop: your own line first, then the nearest. On phones the cap is lifted for the real-phone test (`MaxDrawnPhone` 4,000, more than 26 full lines of 150), so only the distance level of detail limits them; a real phone cap is set from the test's numbers before launch (16).
 - Transitions: a joining critter starts at its bait; stolen critters glide from where they were to their new places (0.5 s); delivered critters pop at the pen.
 - If a leader streams out, hide their line. When they stream back in, start their path again.
 ### 9.6 Saved data
@@ -788,7 +790,7 @@ export type SaveData = {
 ### 9.8 Performance budgets
 | Area | Budget |
 |---|---|
-| Server game logic | 6 ms or less per frame on average, with 6 players and every line at 300 |
+| Server game logic | 6 ms or less per frame on average, with 6 players and every line at 150 |
 | Cut checks | 1.5 ms or less per check (10 per second) |
 | Mid-range phone | At least 45 FPS, aiming for 60, in a full server with every line at its cap |
 | `LineRenderer` on that phone | 2.5 ms or less per frame |
@@ -862,17 +864,17 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 3. With the leash full, throws are rejected and THROW greys out.
 4. 20 rapid clicks (`user_mouse_input`) produce no more accepted throws than elapsed time ÷ cooldown + 1.
 **C01-M3: Follower chain** (Wed 11 Nov). Hand-tune: spacing, hop, smoothing.
-1. A debug line of 300 follows a figure-of-eight walk (`character_navigation`). `screen_capture` shows it tracing the path, and once settled no follower is more than 1 stud from its target.
+1. A debug line of 150 follows a figure-of-eight walk (`walk8`, since `character_navigation` desyncs under Server Authority). `screen_capture` shows it tracing the path, and once settled no follower is more than 1 stud from its target.
 2. Two clients (Studio Test tab, Clients and Servers) see each other's lines.
-3. Walk speed matches the formula at lengths 0, 100, 200 and 300.
-4. On a real mid-range phone, with 6 lines at 300 (debug leaders), the game runs at 45 FPS or more and `LineRenderer` takes 2.5 ms or less (MicroProfiler). Then, with the developer's own line also at 300, jump repeatedly for 20 s so jump waves keep running, and report FPS and `LineRenderer` ms with the waves running (same limits).
+3. Walk speed matches the formula at lengths 0, 50, 100 and 150, and a change mid-walk or mid-fall causes no misprediction (`RunService.Misprediction`) and no replayed animation.
+4. On a real mid-range phone, with 6 lines at 150 (debug leaders), the game runs at 45 FPS or more and `LineRenderer` takes 2.5 ms or less (MicroProfiler). Then, with the developer's own line also at 150, jump repeatedly for 20 s so jump waves keep running, and report FPS and `LineRenderer` ms with the waves running (same limits).
 5. Server Authority decision: if movement feels normal on phone and PC with no new errors, keep it. Otherwise switch to Automatic and log the change (9.1).
 6. Jump on the spot, then stand still: no follower is ever above the ground by more than its hop height (the wave's height while the wave passes it), and the line is back on the ground once the wave has passed.
 7. Jump while walking: a hop wave runs down the line, each follower hopping once, front to back, and nothing else lifts the line.
 8. Walking up and down a step or slope still works: followers stay on the floor and no hop marker is made.
 **C01-M4: Income and DataStore** (Thu 12 Nov). Includes the biome cap, placement and storage rules (4.5.3, 4.5.6, 4.5.7).
 1. Delivering a 10-critter line pays exactly Σ value × 1.25 coins and the right LP.
-2. A 300-critter delivery finishes within 4.5 s, and stepping out of the pen pauses it.
+2. A 150-critter delivery finishes within 4.5 s (any line of 32 or more takes 4 s), and stepping out of the pen pauses it.
 3. Pen income over 60 s matches the formula to within one tick.
 4. Upgrade costs and effects match Config; upgrades can't be bought without enough coins or past the top level.
 5. Below the LP requirement, a player pushed into a gate (`execute_luau`) is moved back out; at the requirement they pass.
@@ -888,7 +890,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 3. No cut happens in each blocked case in 4.4.2: a SafeZone, a line under 10, a cutter standing still, either player shielded, each cooldown, a full leash.
 4. Golden Bait critters in the segment stay with the victim.
 5. A teleport attempt from the client (`execute_luau` on the Client datamodel) is flagged, can't cut for 10 s, and is moved back.
-6. The snip, the banners, "BIG STEAL!" at 50 or more and the server toast at 100 or more all fire. The server toast names the cutter but not the victim.
+6. The snip, the banners, "BIG STEAL!" at 25 or more and the server toast at 50 or more all fire. The server toast names the cutter but not the victim.
 7. Tier rule (4.4.2): with `CutTierGap` unset (the launch default), a player whose top tier is Snowy Peaks can cut in every biome. With 1, they can't cut in the Meadow; with 0, they can't cut in the Meadow or the Jungle. They can always cut in their top biome and in event biomes.
 **C01-M6: Shop and purchase receipts** (Mon 16 Nov)
 1. Each pass and product grants exactly once in a Studio test purchase. Replaying ProcessReceipt with the same PurchaseId grants nothing more.
@@ -915,7 +917,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 **C01-M9: Rebirth and friends** (Wed 18 Nov). Scope: `RebirthService`, the Rebirth screen, `FriendsService`, the Invite button (4.7, 4.12). If it slips, see the note under 10.1.
 1. The Rebirth screen shows progress towards each need until all are met. A `Rebirth` call before Snowy Peaks is unlocked, below the LP or coin need (economy.md 5.7) or with critters in the line is rejected and counted.
 2. A rebirth resets coins, upgrades (Storage included), LP and every critter in the pen and storage that isn't a favourite. It keeps everything in the 4.7 Keeps list.
-3. After n rebirths: a test delivery pays (1 + 0.15n) times the coins and LP it paid with no rebirths; leash capacity is 10n higher, never above 300; the crown above the player and on the pen sign matches; and the next rebirth's needs match economy.md 5.7.
+3. After n rebirths: a test delivery pays (1 + 0.15n) times the coins and LP it paid with no rebirths; the throw cooldown is max(0.5, 0.8 − 0.05n) s on the client and the server, and capacity doesn't change; the crown above the player and on the pen sign matches; and the next rebirth's needs match economy.md 5.7.
 4. Favourites go back to the pen as far as its 6 slots allow, and the rest go to storage. They earn at the biome-capped value until their biomes are unlocked again.
 5. The confirmation screen lists what resets, what stays and what the player gets, and names every Golden Bait critter that isn't a favourite and will go.
 6. Two quick `Rebirth` calls rebirth once, and a rejoin straight after a rebirth shows the same state.
@@ -931,7 +933,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 2. **Several clients:** Studio Test tab → Clients and Servers, with 2–3 players. Needed for cuts, loose-critter grabs and line drawing.
 3. **Cheater checklist** (9.7), at M5 and again at M8: an agent tries each exploit from the Client datamodel and confirms the server blocks it.
 4. **Devices:** a real mid-range Android phone and an iPhone, plus PC, and a console if one is available.
-5. **Soak test:** 30 minutes with 6 debug leaders at 300. No errors, and memory grows by under 10%.
+5. **Soak test:** 30 minutes with 6 debug leaders at 150. No errors, and memory grows by under 10%.
 6. **Data:** two accounts, rejoining, shutdown flush (`BindToClose`) and the session lock.
 ## 12. Launch checklist (Thu 19 – Fri 20 Nov)
 - [ ] Every milestone check passes on a fresh publish.
@@ -1109,11 +1111,16 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Launch ads use Ads Manager's Engagement goal instead of "Sponsored ads", same $20–40 budget (10.1, 12). It reaches only the age-checked, highly engaged players who count towards the threshold, at a higher cost per play, and must be paused by hand at the threshold. The later ad spend in 14 (£50–100, then £100–150) keeps its wording until the developer chooses its goal | Developer | Proposed |
 | 2026-11-08 | Bug fix (developer's playtest): two characters that ran into each other stepped up onto each other in turn and climbed high into the air. Characters (players and debug leaders) no longer collide with each other: every character part goes in a `Characters` collision group that doesn't collide with itself (`src/server/CharacterCollision.luau`). They still collide with the map. Nobody can body-block another player either (pillar: fair to young players) | C01-M3 | Final unless changed |
 | 2026-11-08 | Developer's call: phones have no follower cap for the real-phone test (`Render.MaxDrawnPhone` 350 → 4,000); the distance level of detail stays (hidden beyond 150 studs on phones, far followers moved every second frame). Set a real cap from the test's numbers before launch (9.5). Debug: `leaders <k> [length] [biome]` sets the leaders' line length (a new length respawns them), and `fill` raises Leash, then Longer Leash, to the lowest setting that holds n instead of silently capping | Developer | Tunable |
-| 2026-11-08 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth no longer adds +10 capacity and instead cuts the throw cooldown by 0.05 s (at least 0.5 s); Conga steps, banners (50, 100, FULL LINE!), BIG STEAL at 25 and the server toast at 50, and the 150 performance cap. Every affected section is listed in `docs/drafts/line-cap-100.md` section 7; none is changed yet | Developer | Proposed |
+| 2026-11-08 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth no longer adds +10 capacity and instead cuts the throw cooldown by 0.05 s (at least 0.5 s); Conga steps, banners (50, 100, FULL LINE!), BIG STEAL at 25 and the server toast at 50, and the 150 performance cap. Every affected section is listed in `docs/drafts/line-cap-100.md` section 7. Approved by the developer on 2026-11-08 with one change, walk speed slowing 0.3% a critter (next row); applied in v0.23 (economy.md v0.5, 11.10) | Developer | Final unless changed |
+| 2026-11-08 | Walk speed slows 0.3% a critter (was 0.15%), floor ×0.60: ×0.70 at 100, the floor from 134. A heavier full line, the developer's change to the draft. Re-run at 1,000 players: no pacing target moved more than 3.1% (economy.md 6) | Developer | Tunable |
+| 2026-11-08 | Bug fix (the developer's phone glitches): the server wrote `Humanoid.WalkSpeed` outside the simulation on every join, so the client mispredicted (a 0.69-stud nudge mid-walk, a replayed fall animation mid-jump). Now the server never writes a player's WalkSpeed: `LineService` announces each change in the Player attribute `WalkSpeedPlan` (from, to, at) with `at` = `time()` + `Line.SpeedLeadSeconds` (0.3 s), and `WalkSpeedSync.luau` applies it with `BindToSimulation` on the server and the local client. One change pending at a time; changes inside the lead time merge into the next. Debug leaders, which no client predicts, are still set directly. Measured: 0 mispredictions and no replayed animations mid-walk and mid-fall; the client switched on the planned step | C01-M3 | Final unless changed |
+| 2026-11-08 | Each player's throw cooldown is `LineRules.ThrowCooldown(rebirths)`; the server's cooldown check and the ThrowBait token bucket refill at (own cooldown − 0.1 s), and the client's THROW button reads the Player's `Rebirths` attribute. New debug command `rebirths <player> <n>` until C01-M9; the validator needs `RateLimitSlack` below `CooldownMin` | C01-M3 | Final unless changed |
+| 2026-11-08 | "FULL LINE!" replaces the 50/100 banner when a line of at least `Line.FullLineBannerMin` (100) reaches its own capacity, so a free line of 100 shows FULL LINE! and a pass line shows 100! then FULL LINE! at 150 | C01-M3 | Tunable |
+| 2026-11-08 | Open (economy.md 11.11): with lines capped at 100 the model no longer picks the Far band (Snowy Peaks Near 93%, Mid 7%), so pillar 2's deep, risky runs don't pay best. Pacing is unaffected. Pick a lever (band luck, depth or slowdown) before the soft launch, or accept and watch it live | Economy | Developer to decide |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
-- `/docs/economy.md` v0.4 and `/tools/econ_sim.py`: the tuned numbers and the simulation behind them.
+- `/docs/economy.md` v0.5 and `/tools/econ_sim.py`: the tuned numbers and the simulation behind them.
 - Roblox Creator Hub, "Quick Words" (updated 2026-10-22): https://create.roblox.com/docs/chat/quick-words
 - Roblox Creator Hub, "Paid random items policy guidelines" (updated 2026-10-15): https://create.roblox.com/docs/production/monetization/paid-random-items
 - Roblox DevForum, "Update on paid random items restriction for UK users under 18": https://devforum.roblox.com/t/update-on-paid-random-items-restriction-for-uk-users-under-18/3072183
@@ -1146,4 +1153,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.20 (2026-11-08): bug fix, characters no longer collide with each other, so two can't climb each other (16).
 - 0.21 (2026-11-08): phone follower cap lifted for the real-phone test (9.5, 16); `leaders` takes a length and `fill` raises capacity to fit (16).
 - 0.22 (2026-11-08): the line-cap proposal (100, 150 with Longer Leash) logged as Proposed in 16; the draft and model runs are in `docs/drafts/line-cap-100.md`.
+- 0.23 (2026-11-08): the line cap approved and built: 100, 150 with Longer Leash; Leash track to level 9; Conga steps to ×3.5 at 150; rebirth cuts the throw cooldown instead of adding capacity (4.1, 4.3, 4.7, 5.5, 6.1, 6.3); banners 50, 100 and FULL LINE!, BIG STEAL at 25, server toast at 50 (4.4.5, 7.4); walk speed 0.3% a critter, applied in the shared simulation 0.3 s ahead (4.3, 9.1, 9.2, 9.4); budgets and M3/M4/M5/M9 checks and the soak test at 150 (9.5, 9.8, 10.2); pitch "100-critter line" (1.1). Section 16 logs the walk-speed fix, the per-player cooldown, FULL LINE! and an open item on band choice.
  

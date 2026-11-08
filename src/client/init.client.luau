@@ -9,6 +9,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Types = require(Shared:WaitForChild("Types") :: ModuleScript)
 
+-- Walk speed is applied in the shared simulation, on the same step as the server (Shared/WalkSpeedSync, spec 9.1).
+require(Shared:WaitForChild("WalkSpeedSync") :: ModuleScript).Start()
+
 -- Boot order: the controllers table in spec 9.2. Modules not listed here still load, after these, alphabetically.
 local ORDER = {
 	"InputController",
