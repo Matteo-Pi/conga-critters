@@ -63,12 +63,29 @@ DEFAULTS = dict(
     rebirth_coins=[20e6, 200e6, 800e6, 3e9, 12e9],
     rebirth_growth_lp=2.5, rebirth_growth_coins=4,  # each rebirth after the table
     rebirth_bonus=0.15, rebirth_leash=10,
+    # per-rebirth gains besides the bonus (all 0 today; docs/drafts/line-cap-100.md compares them)
+    rebirth_speed=0, rebirth_speed_max=0,           # walk speed +n per rebirth, at most +max
+    cooldown=0.8, rebirth_cooldown=0.0, cooldown_min=0.5,  # throw cooldown (inside throw_every) − n per rebirth
+    rebirth_luck=0.0,                               # bait luck +n per rebirth (before the band's factor)
+    rebirth_pen=0,                                  # pen slots +n per rebirth
+    leash_pass_x=1.5,                               # Longer Leash multiplier
     index_bonus=0.10,                               # per completed Normal set, added together; no cap
     extra_coin=1.0,                                 # other coin boosts as one multiplier (VIP 1.1, Friend Boost, events)
     golden_bait_per_hour=4,                         # daily ladder + Stand, per hour played
 )
  
-TRACK_MAX = {"Leash": 13, "Bait": 15, "Pen": 13, "Speed": 9, "Storage": 7}
+TRACK_MAX = {"Leash": 13, "Bait": 15, "Pen": 13, "Speed": 9, "Storage": 7}   # with DEFAULTS
+
+
+def track_max(p):
+    """Levels per track: level 1 plus one per cost (so a --set cost table changes it)."""
+    return {k: len(p["cost"][k]) + 1 for k in TRACK_MAX}
+
+
+def throw_every(p, rebirths):
+    """Seconds per throw while filling: the 0.8 s cooldown plus aiming, less any rebirth cut."""
+    cut = min(p["rebirth_cooldown"] * rebirths, p["cooldown"] - p["cooldown_min"])
+    return p["throw_every"] - max(0.0, cut)
  
  
 def rarity_probs(weights, luck):
@@ -107,10 +124,10 @@ def rebirth_needs(p, r):
     return lp_t[-1] * p["rebirth_growth_lp"] ** k, coin_t[-1] * p["rebirth_growth_coins"] ** k
  
  
-def run_time(p, cap, dist, speed):
+def run_time(p, cap, dist, speed, rebirths=0):
     slow = max(0.6, 1 - 0.0015 * cap)
     deliver = cap / max(8, cap / 4)
-    return (dist / speed + cap * p["throw_every"] + p["join_delay"]
+    return (dist / speed + cap * throw_every(p, rebirths) + p["join_delay"]
             + dist / (speed * slow) + deliver + p["overhead"])
  
  
@@ -126,7 +143,8 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
  
     t = coins = lp = 0.0
     tier = rebirths = 0
-    lv = {k: 1 for k in TRACK_MAX}
+    tmax = track_max(p)
+    lv = {k: 1 for k in tmax}
     pen_base, pen_tier = np.empty(0), np.empty(0, int)
     index = [set() for _ in p["tiers"]]
     index_done = []
@@ -136,9 +154,9 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
  
     while t < hours * 3600:
         cap = p["leash"][lv["Leash"] - 1] + p["rebirth_leash"] * rebirths
-        cap = int(min(cap * (1.5 if leash_pass else 1), p["line_cap"]))
-        speed = p["base_speed"] + lv["Speed"] - 1
-        bait_luck = 1 + p["bait_step"] * (lv["Bait"] - 1)
+        cap = int(min(cap * (p["leash_pass_x"] if leash_pass else 1), p["line_cap"]))
+        speed = p["base_speed"] + lv["Speed"] - 1 + min(p["rebirth_speed"] * rebirths, p["rebirth_speed_max"])
+        bait_luck = 1 + p["bait_step"] * (lv["Bait"] - 1) + p["rebirth_luck"] * rebirths
         if first:
             band, dist = 0, p["first_pen_to_gate"] + p["bands"][0][1]
         else:  # the band with the best expected coins per second
@@ -147,12 +165,12 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
                 lam = min(p["luck_cap"], bait_luck * luck)
                 if lam not in ev_cache:
                     ev_cache[lam] = float(rarity_probs(p["weights"], lam) @ value)
-                rate = ev_cache[lam] / run_time(p, cap, p["pen_to_gate"] + d, speed)
+                rate = ev_cache[lam] / run_time(p, cap, p["pen_to_gate"] + d, speed, rebirths)
                 if best is None or rate > best[0]:
                     best = (rate, b, p["pen_to_gate"] + d)
             _, band, dist = best
         lam = min(p["luck_cap"], bait_luck * p["bands"][band][2])
-        T = run_time(p, cap, dist, speed)
+        T = run_time(p, cap, dist, speed, rebirths)
  
         n_gold = int(min(golden_bait, cap))
         n_norm = cap - n_gold
@@ -193,7 +211,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
         # auto-place: the pen keeps its most valuable critters
         cand_base = np.concatenate([pen_base, base])
         cand_tier = np.concatenate([pen_tier, np.full(n, tier)])
-        slots = 6 + 2 * (lv["Pen"] - 1)
+        slots = 6 + 2 * (lv["Pen"] - 1) + p["rebirth_pen"] * rebirths
         keep = np.argsort(-(cand_base * coin_m[np.minimum(cand_tier, tier)]))[:slots]
         pen_base, pen_tier = cand_base[keep], cand_tier[keep]
  
@@ -209,6 +227,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
             ms.setdefault("first_epic", t)
         if n >= 100:
             ms.setdefault("line_100", t)
+            ms.setdefault(f"line_100_r{rebirths}", t)
         first = False
  
         while tier + 1 < len(gates) and lp >= gates[tier + 1]:
@@ -217,7 +236,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
             ms.setdefault(f"tier_{tier}_any", t)
  
         while True:  # upgrades: the cheapest affordable one first
-            options = [(p["cost"][k][lv[k] - 1], k) for k in TRACK_MAX if lv[k] < TRACK_MAX[k]]
+            options = [(p["cost"][k][lv[k] - 1], k) for k in tmax if lv[k] < tmax[k]]
             options = [o for o in options if o[0] <= coins]
             if not options:
                 break
@@ -226,7 +245,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
             lv[k] += 1
             ms.setdefault("first_upgrade", t)
             ms.setdefault(f"{k}_{lv[k]}_r{rebirths}", t)
-        if all(lv[k] == TRACK_MAX[k] for k in TRACK_MAX):
+        if all(lv[k] == tmax[k] for k in tmax):
             ms.setdefault(f"all_max_r{rebirths}", t)
  
         need_lp, need_coins = rebirth_needs(p, rebirths)
@@ -238,7 +257,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
             pen_base, pen_tier = pen_base[keep], pen_tier[keep]
             coins = lp = 0.0
             tier = 0
-            lv = {k: 1 for k in TRACK_MAX}
+            lv = {k: 1 for k in tmax}
             rebirths += 1
             ms[f"rebirth_{rebirths}"] = t
  
@@ -290,7 +309,7 @@ def report(p, players, hours, seed, label, detail=False, **kw):
     print("coins per minute (median):    " + ", ".join(incomes))
     if detail:
         print("upgrade timeline, first cycle (median minute each level is bought):")
-        for k, top in TRACK_MAX.items():
+        for k, top in track_max(p).items():
             cells = []
             for lvl in range(2, top + 1):
                 v = [ms[f"{k}_{lvl}_r0"] / 60 for ms, _ in results if f"{k}_{lvl}_r0" in ms]

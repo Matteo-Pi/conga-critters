@@ -609,6 +609,7 @@ Every decision here has been settled by the developer; the spec's decisions log 
 | 11.7 | Event biomes after their event: close them or keep them open | Decided: close them when the event ends and bring them back for later events, so their Index sets stay completable (developer, 2026-11-07). Their critters keep paying in pens | 7.1, 7.4 |
 | 11.8 | Tier 4's date and gate | Decided: pencilled in for Fri 11 Dec, with a 4M LP gate and the raised rebirth needs in 6.8; confirm at the day-14 review (developer, 2026-11-07) | 7.2, 7.3 |
 | 11.9 | Rebirth at the soft launch or in Update 1. Without it, engaged players (an hour a day) max every upgrade around day 3 with nothing left to buy, right in the D2–7 window | Decided: ship rebirth, with the 3 free favourite slots, at the soft launch (developer, 2026-11-07) | 1.2, 6.1; spec 4.7 |
+| 11.10 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth cuts the throw cooldown (−0.05 s, at least 0.5 s) instead of adding +10 capacity; refitted rebirth needs, Conga steps and pen income | **Proposed** (developer's brief, 2026-11-08). Draft and model runs in `docs/drafts/line-cap-100.md`; nothing in this document changes until approved | 4.6, 5.4–5.7, 6 |
 | 11.10 | A full Rainbow set takes about 200 hours of throwing per biome | Decided: the rainbow trail needs only the Common, Uncommon and Rare species, about 7 hours (developer, 2026-11-07) | 6.7; spec 4.8 |
  
 ## 12. Changelog

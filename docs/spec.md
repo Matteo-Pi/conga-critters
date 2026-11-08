@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.21
+spec_version: 0.22
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -1109,6 +1109,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Launch ads use Ads Manager's Engagement goal instead of "Sponsored ads", same $20–40 budget (10.1, 12). It reaches only the age-checked, highly engaged players who count towards the threshold, at a higher cost per play, and must be paused by hand at the threshold. The later ad spend in 14 (£50–100, then £100–150) keeps its wording until the developer chooses its goal | Developer | Proposed |
 | 2026-11-08 | Bug fix (developer's playtest): two characters that ran into each other stepped up onto each other in turn and climbed high into the air. Characters (players and debug leaders) no longer collide with each other: every character part goes in a `Characters` collision group that doesn't collide with itself (`src/server/CharacterCollision.luau`). They still collide with the map. Nobody can body-block another player either (pillar: fair to young players) | C01-M3 | Final unless changed |
 | 2026-11-08 | Developer's call: phones have no follower cap for the real-phone test (`Render.MaxDrawnPhone` 350 → 4,000); the distance level of detail stays (hidden beyond 150 studs on phones, far followers moved every second frame). Set a real cap from the test's numbers before launch (9.5). Debug: `leaders <k> [length] [biome]` sets the leaders' line length (a new length respawns them), and `fill` raises Leash, then Longer Leash, to the lowest setting that holds n instead of silently capping | Developer | Tunable |
+| 2026-11-08 | Lines capped at 100, 150 with Longer Leash (×1.5); rebirth no longer adds +10 capacity and instead cuts the throw cooldown by 0.05 s (at least 0.5 s); Conga steps, banners (50, 100, FULL LINE!), BIG STEAL at 25 and the server toast at 50, and the 150 performance cap. Every affected section is listed in `docs/drafts/line-cap-100.md` section 7; none is changed yet | Developer | Proposed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1144,4 +1145,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.19 (2026-11-08): Roblox's Kids and Select publishing rules read (17). Proposed, logged in 16: the all-ages publishing requirements in the launch checklist (12), the soft launch reaching 16+ only at first (10.1), early go/kill numbers from 16+ players (13), a risk row for the 250-play evaluation threshold and a GTA VI note (15), and launch ads with the Engagement goal (10.1, 12). M3 check 4 gains a 20 s jump-wave run (10.2).
 - 0.20 (2026-11-08): bug fix, characters no longer collide with each other, so two can't climb each other (16).
 - 0.21 (2026-11-08): phone follower cap lifted for the real-phone test (9.5, 16); `leaders` takes a length and `fill` raises capacity to fit (16).
+- 0.22 (2026-11-08): the line-cap proposal (100, 150 with Longer Leash) logged as Proposed in 16; the draft and model runs are in `docs/drafts/line-cap-100.md`.
  
