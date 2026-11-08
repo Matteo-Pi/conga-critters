@@ -1,9 +1,9 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.7
-date: 2026-11-07
-status: "Ready to build. C01-M1 starts Monday 2026-11-09."
+spec_version: 0.8
+date: 2026-11-08
+status: "Build day 1 done: repo skeleton, Config, greybox map. C01-M1 starts Monday 2026-11-09."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
   - "/docs/economy.md (v0.4): every tuning number, and the simulation behind them"
@@ -1069,4 +1069,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.5 (2026-11-07): the developer's answers to the review. Rebirth, Friend Boost, Invite and private servers ship at the soft launch: a new milestone C01-M9 (Wed 18 Nov, with a launch-weekend fallback), favourites built in C01-M7, the Rebirth screen opened from Upgrades, `RebirthService` and `FriendsService`, a debug friend count, analytics, checks, the calendar, Update 1's list and a risk row. An optional tier rule for cutting, off at launch (4.4.2). A missed day pauses the daily ladder (4.9). The rainbow trail needs only Common to Rare species (4.8). Server-wide steal toasts name only the cutter (4.4.5). Custom Quick Words (4.12, P1), submitted on Sat 14 Nov. The Manage Pen introduction's timing is still "Proposed".
 - 0.6 (2026-11-07): the Manage Pen menu introduces itself the first time a delivery leaves a critter in storage, never before 5 minutes of play, instead of at 2–3 minutes. The first release after the tutorial gets a wordless hop-home cue and a button pulse. Matching timeline, saved-data flags, a debug playtime command, analytics and the M7 check (2.1, 4.5.8, 9.6, 9.9, 9.10, 10.2).
 - 0.7 (2026-11-07): the developer settled all 13 "Developer to confirm" decisions (16); 11 stand as written. Two changes: an auto-release on/off switch ships at the soft launch in the Manage Pen menu (4.5.6, 4.5.8; `SetPenSettings` gains `autoRelease`, 9.4), and the default filter releases Rare or lower, Normal only, keeping Golden critters (`IncludeGolden` defaults to false, 9.6). Matching M4 check 8 and M7 check 9, an analytics event for the switch, Update 1's list, a new risk row, and the day-14 review items in 14.
+- 0.8 (2026-11-08): build day 1. The repo skeleton (Rojo, services and controllers booting in order) and `src/shared/Config` filled from economy.md, with `Config/Camera` added. The greybox map in the place file: 8 pens round a hexagonal hub, 6 gates in tier order clockwise (Meadow, Jungle, Peaks, Tier 4, Tier 5, event biomes), each a 60 × 50 archway, and cone biomes 110 wide at the entrance to 350 at 400 deep, with walls taller than the camera zoom limit. `Zones.Contains` tests box and trapezoid zones. Server Authority is on. Matching changes to 2.1, 3.1, 3.2, 4.10 (Critter Rush defaults to 30 minutes), 9.2, 10.1 (art pass on Sun 15 Nov) and 16.
  
