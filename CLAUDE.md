@@ -37,4 +37,10 @@ A Roblox game (ages 9–15, phones first), built with Rojo 7.7.1, Git and Roblox
 ## Known noise
 Playtests log `ContentId: rbxassetid://203785492 failed due to: Asset type does not match requested type` three times at boot. Nothing in the place references that asset, so it comes from Roblox's own scripts, not ours (it was once blamed on the Baseplate, wrongly). Ignore it.
 
-While MCP's `user_mouse_input` runs, the console fills with `Unknown action nil` (about 10 lines per click). It comes from the tool, not our code. Ignore it too. The tool's x/y are GUI coordinates: `UserInputService:GetMouseLocation()` reads them 58 px lower, because it includes the top bar.
+Emulated input (MCP's `user_mouse_input`, or a click in Studio's Controller Emulator) fills the console with `Unknown action nil`, about 10 lines per click. It isn't from our code. Ignore it too. The tool's x/y are GUI coordinates: `UserInputService:GetMouseLocation()` reads them 58 px lower, because it includes the top bar.
+
+In Studio's Device Simulator (phones):
+- Roblox's own `PlayerModule` logs `DynamicThumbstick:196: attempt to index nil with 'FindFirstChild'` when the preferred input switches from Touch to KeyboardAndMouse. The MCP tool's keyboard events cause that switch. The touch controls come back on the next touch. Real phones never switch to keyboard, so ignore it.
+- `user_mouse_input` with `instance_path` misses, because the simulator scales the view to fit the window: taps landed at about 0.91× the button's coordinates. Tap at raw x/y scaled up to match, and check with an `InputBegan` probe.
+
+The Controller Emulator has no scripting API, and `VirtualInput` can't press gamepad buttons, so a gamepad test needs the developer to click the button in the emulator widget.
