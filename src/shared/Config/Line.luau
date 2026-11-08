@@ -70,6 +70,7 @@ local Line: Types.LineConfig = {
 		JumpWaveHeight = 4.0,
 		JumpWaveDelay = 0.03,
 		JumpWaveStill = 0.3,
+		JumpWaveMax = 16, -- waves running down one line at once (a 300-line wave lasts about 9 s; jumps are ~1 s apart)
 	},
 	Banners = { 100, 200, 300 },
 }

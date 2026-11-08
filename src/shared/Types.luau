@@ -132,10 +132,11 @@ export type LineRenderConfig = {
 	JoinHopHeight: number, -- studs: the arc of a joining critter's hop from its bait into the line
 	JumpHopHeight: number, -- studs: a follower's hop as it passes a hop marker
 	JumpHopSeconds: number,
-	JumpWave: boolean, -- a jump on the spot sends a small hop down the line (off by default)
+	JumpWave: boolean, -- a jump on the spot sends a hop wave down the line
 	JumpWaveHeight: number,
 	JumpWaveDelay: number, -- seconds between neighbours in the wave
 	JumpWaveStill: number, -- the leader counts as standing still below this Moving factor (0–1)
+	JumpWaveMax: number, -- most waves running down one line at once; a new one past this drops the oldest
 }
 
 export type ThrowConfig = {

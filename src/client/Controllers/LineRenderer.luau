@@ -14,7 +14,8 @@
 --   * hop = |sin(t·ω + i·φ)| × h, scaled down while the leader stands still, plus a small side-to-side waddle;
 --   * paths stay at ground height (Path.Locate); a follower passing a hop marker (where the leader took off) plays
 --     a JumpHopHeight hop over JumpHopSeconds; a jump on the spot leaves the line on the ground (or, with
---     Render.JumpWave on, sends a small hop down it);
+--     Render.JumpWave on, sends a hop down it; each jump starts its own wave, so several can run down the line at
+--     once, and a follower reached by two at the same moment takes the higher hop, not the sum);
 --   * smoothing takes out sudden jumps in a follower's target (a delivery moving the line up, a snapshot) over about
 --     3 / Smoothing s, so followers trace the path exactly while walking; jumps beyond SnapDistance snap;
 --   * level of detail by distance from the local character: hop, waddle, colour cycling (and later particles)
@@ -81,7 +82,7 @@ type View = {
 	LeaderDistance: number,
 	Root: BasePart?,
 	Humanoid: Humanoid?,
-	WaveAt: number?, -- a jump on the spot started a hop wave (Render.JumpWave)
+	Waves: { number }, -- start times of the hop waves running down the line, oldest first (Render.JumpWave)
 }
 
 local views: { [number]: View } = {}
@@ -259,7 +260,7 @@ local function getView(ownerId: number): View
 		LeaderDistance = math.huge,
 		Root = nil,
 		Humanoid = nil,
-		WaveAt = nil,
+		Waves = {},
 	}
 	views[ownerId] = created
 	return created
@@ -410,11 +411,13 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 	local markers = #hopDist
 	local jumpSeconds = Render.JumpHopSeconds
 	local jumpHeight = Render.JumpHopHeight
-	local waveAt = view.WaveAt
-	if waveAt and t - waveAt > count * Render.JumpWaveDelay + jumpSeconds then
-		view.WaveAt = nil
-		waveAt = nil
+	-- A wave ends once it has passed the last follower; the oldest ends first.
+	local waves = view.Waves
+	local waveDelay = Render.JumpWaveDelay
+	while #waves > 0 and t - waves[1] > count * waveDelay + jumpSeconds do
+		table.remove(waves, 1)
 	end
+	local waveCount = #waves
 
 	local decay = math.exp(-Render.Smoothing * dt)
 	local hopScale = Render.IdleHop + (1 - Render.IdleHop) * view.Moving
@@ -519,11 +522,15 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 				lift += 4 * a * (1 - a) * jumpHeight
 			end
 		end
-		if waveAt then
-			local a = (t - waveAt - i * Render.JumpWaveDelay) / jumpSeconds
-			if a > 0 and a < 1 then
-				lift += 4 * a * (1 - a) * Render.JumpWaveHeight
+		if waveCount > 0 then
+			local waveLift = 0
+			for w = 1, waveCount do
+				local a = (t - waves[w] - i * waveDelay) / jumpSeconds
+				if a > 0 and a < 1 then
+					waveLift = math.max(waveLift, 4 * a * (1 - a) * Render.JumpWaveHeight)
+				end
 			end
+			lift += waveLift
 		end
 
 		-- Facing along the path; hop and waddle.
@@ -619,7 +626,10 @@ local function record(dt: number)
 				follower.PathDist = nil
 			end
 		elseif tookOff and Render.JumpWave and view.Moving < Render.JumpWaveStill then
-			view.WaveAt = os.clock()
+			table.insert(view.Waves, os.clock())
+			if #view.Waves > Render.JumpWaveMax then
+				table.remove(view.Waves, 1)
+			end
 		end
 		local last = view.LastGround
 		local speed = if last and dt > 0 then Vector3.new(ground.X - last.X, 0, ground.Z - last.Z).Magnitude / dt else 0
@@ -780,13 +790,14 @@ local function report(command: any, arg: any): any
 		table.insert(
 			lines,
 			string.format(
-				"  line %d: %d followers, %d drawn, seq %d, path %d points, leader %.0f studs away",
+				"  line %d: %d followers, %d drawn, seq %d, path %d points, leader %.0f studs away, %d waves running",
 				ownerId,
 				#view.Followers,
 				drawn,
 				view.Seq,
 				if view.Path then view.Path.Count else 0,
-				view.LeaderDistance
+				view.LeaderDistance,
+				#view.Waves
 			)
 		)
 	end

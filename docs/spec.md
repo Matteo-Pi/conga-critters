@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.15
+spec_version: 0.16
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -708,7 +708,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 - Follower i sits behind the leader at the summed spacing of followers 1 to i. Work out every position in one pass along the path, so the cost grows with points plus followers, not points times followers.
 - A jump of more than 25 studs between samples (a respawn, or the server moving a player) resets the path to a straight line behind the leader.
 - Breadcrumbs are at ground height, never in the air: the leader's X and Z with the height of the floor straight below it (a downward raycast into `Workspace.Map`). The leader is airborne when its feet are more than 1.5 studs above that floor, so steps and slopes don't count. A jump on the spot therefore adds no path.
-- Each take-off is kept as a hop marker at its point on the path. A follower plays a hop when it passes a marker (drawn by the client), and the marker is dropped once the last follower has passed it. A jump on the spot adds no marker hops; instead a hop wave runs down the line (`Config.Line.Render.JumpWave`, on). With the wave off, the line stays on the ground.
+- Each take-off is kept as a hop marker at its point on the path. A follower plays a hop when it passes a marker (drawn by the client), and the marker is dropped once the last follower has passed it. A jump on the spot adds no marker hops; instead a hop wave runs down the line (`Config.Line.Render.JumpWave`, on). Each jump starts its own wave, so several can run down the line at once; a follower reached by two at the same moment takes the higher hop. With the wave off, the line stays on the ground.
 **Server**
 - Records each leader's position 15 times a second.
 - Checks for cuts 10 times a second (4.4.2). It skips a victim straight away if the cutter is outside the bounding box of the victim's cuttable followers (plus the cut radius), and otherwise tests only those followers.
@@ -1090,6 +1090,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Bug fix: after a jump, followers froze in mid-air, because breadcrumbs recorded the leader's height during the jump (a jump on the spot made a vertical column of path). `Path.luau` now records ground height only (`Path.Locate`: the floor straight below, from a raycast into `Workspace.Map`; airborne above `AirborneGap` 1.5 studs) and keeps each take-off as a hop marker. On the client, a follower passing a marker plays a `JumpHopHeight` (2.0) hop over `JumpHopSeconds` (0.4), timed from the moment it crossed, so a line that stops mid-hop still lands. The server keeps and drops the same markers but draws nothing. A take-off within `HopMinGap` (1 stud) of the last marker adds none, so repeated jumps on the spot make one marker. Optional hop wave on a jump on the spot behind `Render.JumpWave`, off by default. New M3 checks 6–8 (10.2) | C01-M3 | Tunable |
 | 2026-11-08 | Developer's call after the fix: higher hops and the jump wave on, because it engages players. `JumpHopHeight` 2.0 → 3.5 studs, with `JumpHopSeconds` 0.4 → 0.5 so the higher hop doesn't look twitchy; `JumpWave` on, `JumpWaveHeight` 0.8 → 1.5. The walking hop (`HopHeight` 0.6) is unchanged | Developer | Tunable |
 | 2026-11-08 | Developer's call: the jump wave much higher, `JumpWaveHeight` 1.5 → 4.0 studs (a little above the 3.5-stud marker hop, about half the leader's own jump) | Developer | Tunable |
+| 2026-11-08 | Developer's call: a jump during a wave no longer cuts the wave off. Each jump on the spot starts its own wave and several run down the line at once (at most `JumpWaveMax`, 16, per line; past that the oldest stops). Where two meet at one follower it takes the higher hop, not the sum, so no follower goes above one wave's height | Developer | Final unless changed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1116,4 +1117,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.13 (2026-11-08): C01-M3 bug fix. Breadcrumbs are recorded at ground height and jumps become hop markers that each follower hops over (4.3, 9.5); a jump on the spot leaves the line on the ground, with an optional hop wave off by default. New M3 checks 6–8 (10.2); section 16 logs the fix and the developer's admin whitelist entry.
 - 0.14 (2026-11-08): the developer asked for higher hops and the jump wave on: jump hops 3.5 studs over 0.5 s, the wave on at 1.5 studs (9.5, 16); M3 check 6 reworded for the wave.
 - 0.15 (2026-11-08): the jump wave raised to 4.0 studs at the developer's request (16).
+- 0.16 (2026-11-08): several jump waves can run down a line at once, at the developer's request (9.5, 16); `Config.Line.Render.JumpWaveMax` added.
  

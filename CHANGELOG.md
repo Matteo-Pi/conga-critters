@@ -60,3 +60,4 @@ One line per milestone or build day; the commit message holds the playtest evide
 - Fix (same day): breadcrumbs at ground height only (`Path.Locate`, a downward raycast into `Workspace.Map`), so followers no longer freeze in mid-air after a jump; each take-off becomes a hop marker that every follower hops over, dropped once the last follower has passed it; optional hop wave on a jump on the spot (`Render.JumpWave`, off). New M3 checks 6–8 pass in Studio. Debug: renderer `events` log, `linepos` shows hop markers, `DebugHold` attribute pauses a debug leader.
 - Tuning (developer's request): jump hops 3.5 studs over 0.5 s (were 2.0 over 0.4), and the jump wave on at 1.5 studs (was off, 0.8).
 - Tuning (developer's request): the jump wave raised to 4.0 studs (was 1.5).
+- Developer's request: jumping during a wave no longer cuts it off; each jump starts its own wave, up to `JumpWaveMax` (16) per line at once, and overlapping waves take the higher hop, not the sum.
