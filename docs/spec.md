@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.18
+spec_version: 0.19
 date: 2026-11-08
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps. Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -839,7 +839,7 @@ Use Roblox AnalyticsService through `TelemetryService`. Check the function names
 | Tue 17 Nov | 9 | C01-M7, including the Manage Pen menu and favourites |
 | Wed 18 Nov | 10 | C01-M8 and C01-M9; analytics events |
 | Thu 19 Nov | 11 | Full regression; device tests; store page; questionnaire; 6 thumbnails, 3 icons and three 10–15 s clips. GTA VI is scheduled for consoles today |
-| **Fri 20 Nov** | **12** | **Soft launch.** $20–40 of Sponsored ads across 3 thumbnails; one clip a day on TikTok, YouTube Shorts and Roblox Moments |
+| **Fri 20 Nov** | **12** | **Soft launch, to age-checked players 16+ only at first** (Proposed, 16): a new game reaches Roblox Kids and Select accounts, ages 5–15, only after it passes Roblox's evaluation (12, 15). $20–40 of Ads Manager ads with the Engagement goal across 3 thumbnails (Proposed, 16); one clip a day on TikTok, YouTube Shorts and Roblox Moments |
 | Sat 21 – Sun 22 Nov | 13–14 | Watch the numbers; hotfixes |
  
 If Sunday runs over, the environment art pass can move to a later day, but it can't be cut: it must be finished before Thu 19 Nov, because the thumbnails, icons and clips come from real gameplay (0.3, rule 5).
@@ -865,7 +865,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 1. A debug line of 300 follows a figure-of-eight walk (`character_navigation`). `screen_capture` shows it tracing the path, and once settled no follower is more than 1 stud from its target.
 2. Two clients (Studio Test tab, Clients and Servers) see each other's lines.
 3. Walk speed matches the formula at lengths 0, 100, 200 and 300.
-4. On a real mid-range phone, with 6 lines at 300 (debug leaders), the game runs at 45 FPS or more and `LineRenderer` takes 2.5 ms or less (MicroProfiler).
+4. On a real mid-range phone, with 6 lines at 300 (debug leaders), the game runs at 45 FPS or more and `LineRenderer` takes 2.5 ms or less (MicroProfiler). Then, with the developer's own line also at 300, jump repeatedly for 20 s so jump waves keep running, and report FPS and `LineRenderer` ms with the waves running (same limits).
 5. Server Authority decision: if movement feels normal on phone and PC with no new errors, keep it. Otherwise switch to Automatic and log the change (9.1).
 6. Jump on the spot, then stand still: no follower is ever above the ground by more than its hop height (the wave's height while the wave passes it), and the line is back on the ground once the wave has passed.
 7. Jump while walking: a hop wave runs down the line, each follower hopping once, front to back, and nothing else lifts the line.
@@ -937,7 +937,10 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 - [ ] Every milestone check passes on a fresh publish.
 - [ ] On a phone, the first critter arrives within 10 s in 5 runs out of 5.
 - [ ] Re-read Roblox's paid random items policy, the Community Standards and the rules on AI-generated assets.
-- [ ] Maturity & Compliance Questionnaire done, with paid random items declared.
+- [ ] Creator account ready to publish for all ages (Proposed, 16): age check done, and the account verified (facial age estimation under 18, government ID 18 or older); in good standing and at least 2 days old.
+- [ ] 2-Step Verification on the creator account (Proposed, 16).
+- [ ] The one-time refundable publishing fee of 1,000 Robux paid for this game, or a Roblox Plus or Premium subscription that has been active for 2 consecutive months (Proposed, 16). Without one of them the game can reach 16+ players only.
+- [ ] Maturity & Compliance Questionnaire done in full (not just the first, age-restricted question), with paid random items declared, and rated Moderate (9+) or lower (Proposed, 16). A higher rating, or "Content May Vary" from answering only the first question, keeps the game away from under-16s.
 - [ ] PolicyService gating tested with a forced "restricted" player.
 - [ ] Store page: the title "Conga Critters", an honest description, no giveaway or Robux claims, and the right genre.
 - [ ] Search Roblox for "Conga Critters" and close variants. The name should still be free: a near-identical name confuses players and search (handoff 6.3).
@@ -948,7 +951,7 @@ Run each check in a playtest (section 11), and paste the evidence into the commi
 - [ ] Private servers on, at a low price (4.12).
 - [ ] Custom Quick Words submitted (4.12). If Roblox hasn't approved them yet, launch anyway; they go live once approved.
 - [ ] Config values match economy.md section 5 (spot-check every table).
-- [ ] Sponsored ads ready: $20–40 across 3 thumbnails.
+- [ ] Ads Manager campaign ready with the **Engagement** goal, $20–40 across 3 thumbnails (Proposed, 16). It reaches the age-checked, highly engaged players whose plays count towards the Kids and Select threshold; it costs more per play than the Plays goal, and it doesn't pause itself at the threshold, so watch the Audience Reach dashboard and pause it there.
 - [ ] GTA VI's console date (scheduled for 2026-11-19) re-checked.
 ## 13. Go/kill
 From the handoff (section 4.3). Benchmarks are the 50th–90th percentiles for similar games in Creator Analytics.
@@ -964,6 +967,8 @@ From the handoff (section 4.3). Benchmarks are the 50th–90th percentiles for s
 | Scale or stop | Launch + 30 (Sun 20 Dec) | Before the holiday window. Also decide whether to add trading (6.4) |
  
 When signals are weak, fix bounce first, then PTR, then D1.
+
+**Early numbers come from 16+ players** (Proposed, 16). Until the game passes the Kids and Select evaluation (250 unique plays by highly engaged, age-checked players within 60 days), Roblox shows it only to age-checked players 16 and older, not to the 9–15 audience it is built for. The launch + 7 checks, and the day-14 call if the threshold hasn't been reached by then, are read from those players: note on each review whether the game has passed evaluation, and read the checks again once under-16s can play.
  
 ## 14. After launch
 | Date | Release | Contents |
@@ -998,7 +1003,8 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | Server Authority is new | Decision at M3; the game stays correct without it |
 | Rebirth and friends add a ninth milestone to a full fortnight | C01-M9 shares Wed 18 Nov with M8. If it slips, launch without it and publish it during the launch weekend (10.1) |
 | The animal trend fading | Biomes are data; fantasy biomes later |
-| GTA VI the day before the soft launch | The soft launch is a metrics read; GTA's audience overlaps less with 9–15-year-olds |
+| GTA VI the day before the soft launch | The soft launch is a metrics read. Its first players are 16+ only (13), so GTA's audience overlaps more than first thought (Proposed, 16) |
+| A slow path to the Kids and Select threshold: 250 unique plays by highly engaged, age-checked players within 60 days (Roblox's docs, 2026-11-06). Until then the 9–15 audience can't play, and the early numbers come from 16+ players (13) (Proposed, 16) | Launch ads use the Engagement goal (12); check the Audience Reach dashboard daily; if it shows no progress after 3–5 days, improve onboarding and the first session before spending more (Ads Manager docs). Invite and Friend Boost (4.12) bring friends, who count only if they are highly engaged themselves. Roblox's expedited review (a refundable 50,000 Robux) skips the wait but is far beyond the ad budget (0.3, rule 7): only the developer can choose it |
  
 ## 16. Decisions log
 | Date | Decision | By | Status |
@@ -1095,6 +1101,12 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Developer's call: a jump during a wave no longer cuts the wave off. Each jump on the spot starts its own wave and several run down the line at once (at most `JumpWaveMax`, 16, per line; past that the oldest stops). Where two meet at one follower it takes the higher hop, not the sum, so no follower goes above one wave's height | Developer | Final unless changed |
 | 2026-11-08 | Developer's call: every jump, walking or standing, sends the hop wave down the line; followers no longer hop at the take-off spot as they pass it ("little bumps in the line"). This replaces 4.3's "the line hops at the same spot". The marker hops stay in the code behind `Render.JumpHopAtSpot` (off); `JumpWaveStill` is gone. M3 check 7 reworded | Developer | Final unless changed |
 | 2026-11-08 | Bug fix (developer's playtest): jumping over a pen fence made the whole line lurch forward about 3 studs twice, because the fence's height (up and down) was added to the path in a frame or two. Height-added length now goes into a lag the followers catch up at `LagCatchUp` 10 studs a second (up to `LagMax` 20); they still climb over the fence. The server records at 15 Hz and the client every frame, so they catch different amounts of a fence's height: after a fence jump the two disagree by up to about 1.5 studs behind it (30-follower line). Add it to the C01-M5 cut-radius note | C01-M3 | Tunable |
+| 2026-11-08 | M3 check 4 gains a jump-wave run: the developer's line at 300 with the 6 debug leaders, jumping repeatedly for 20 s, reporting FPS and `LineRenderer` ms with waves running (10.2) | Developer | Final unless changed |
+| 2026-11-08 | Launch checklist (12) gains Roblox's all-ages publishing requirements (Roblox Kids and Select; Publish games and places, both updated 2026-11-06): the creator's age check and account verification, 2-Step Verification, and the refundable 1,000 Robux publishing fee or a Plus or Premium subscription active for 2 consecutive months; the questionnaire completed in full and rated Moderate (9+) or lower | Developer | Proposed |
+| 2026-11-08 | The soft launch reaches age-checked players 16+ only at first; Kids and Select accounts (ages 5–15) follow once the game passes evaluation (10.1) | Developer | Proposed |
+| 2026-11-08 | Go/kill (13): the early numbers come from 16+ players; each review notes whether the game has passed evaluation, and the checks are read again once under-16s can play | Developer | Proposed |
+| 2026-11-08 | Risks (15): a slow path to the Kids and Select threshold, 250 unique plays by highly engaged, age-checked players within 60 days. The developer's brief said 500; Roblox's docs say 250, so the spec uses 250. The GTA VI row now notes that the first players are 16+ | Developer | Proposed |
+| 2026-11-08 | Launch ads use Ads Manager's Engagement goal instead of "Sponsored ads", same $20–40 budget (10.1, 12). It reaches only the age-checked, highly engaged players who count towards the threshold, at a higher cost per play, and must be paused by hand at the threshold. The later ad spend in 14 (£50–100, then £100–150) keeps its wording until the developer chooses its goal | Developer | Proposed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1105,6 +1117,9 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - Roblox DevForum, "[Full Release] Ship Fair And Competitive Games with Server Authority" (2026-07-09): https://devforum.roblox.com/t/full-release-ship-fair-and-competitive-games-with-server-authority/4727993
 - Roblox Creator Hub, Studio MCP server: https://create.roblox.com/docs/studio/mcp
 - PCGamesN, GTA 6 release date (updated 2026-04-29): https://www.pcgamesn.com/gta-6-release-date
+- Roblox Creator Hub, "Roblox Kids and Select" (updated 2026-11-06): https://create.roblox.com/docs/production/publishing/kids-and-select
+- Roblox Creator Hub, "Create and publish games and places" (updated 2026-11-06): https://create.roblox.com/docs/production/publishing/publish-games-and-places
+- Roblox Creator Hub, "Ads Manager" (updated 2026-11-06), campaign goals: https://create.roblox.com/docs/production/promotion/ads-manager
 ## 18. Changelog
 - 0.1 (2026-11-06): first version.
 - 0.2 (2026-11-06): Manage Pen menu, storage, pinning, favourites and Release (4.5.6–4.5.9); the biome cap (4.5.3); the paid mark (4.2); trading deferred to the day-30 review; matching changes to rebirth, upgrades, passes, remotes, saved data, checks, calendar and logs.
@@ -1124,4 +1139,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.16 (2026-11-08): several jump waves can run down a line at once, at the developer's request (9.5, 16); `Config.Line.Render.JumpWaveMax` added.
 - 0.17 (2026-11-08): every jump sends the hop wave down the line, walking or standing; hops at the take-off spot switched off (`Render.JumpHopAtSpot`). Matching changes to 4.3, 9.5, M3 check 7 and 16.
 - 0.18 (2026-11-08): bug fix, no more lurch when jumping over a pen fence: height-added path length is caught up gradually (9.5, 16).
+- 0.19 (2026-11-08): Roblox's Kids and Select publishing rules read (17). Proposed, logged in 16: the all-ages publishing requirements in the launch checklist (12), the soft launch reaching 16+ only at first (10.1), early go/kill numbers from 16+ players (13), a risk row for the 250-play evaluation threshold and a GTA VI note (15), and launch ads with the Engagement goal (10.1, 12). M3 check 4 gains a 20 s jump-wave run (10.2).
  
