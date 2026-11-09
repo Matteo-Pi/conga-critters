@@ -15,6 +15,7 @@ local Debug: Types.DebugConfig = {
 	PerfCommand = "perf", -- `/debug perf [on|off]`: client-only box with FPS, LineRenderer ms and followers drawn
 	PerfWindowSeconds = 5, -- the box's average and worst LineRenderer ms cover this many seconds
 	PerfRefreshSeconds = 0.5, -- how often the box's text updates
+	PerfCorrectionSeconds = 30, -- the box counts Server Authority corrections (RunService.Misprediction) over this long
 	StudioBridgeName = "DebugBridge", -- BindableFunction under ServerScriptService, Studio only
 	RollMaxSamples = 1000000, -- `roll … <n>` refuses more than this
 	MaxLeaders = 12, -- `leaders <k>` spawns at most this many debug leaders

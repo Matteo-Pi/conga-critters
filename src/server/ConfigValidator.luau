@@ -219,8 +219,15 @@ function ConfigValidator.Collect(live: boolean): { string }
 	if not positive(line.SpeedLeadSeconds) then
 		table.insert(problems, "Line: SpeedLeadSeconds must be positive")
 	end
-	if not positive(Config.Debug.PerfWindowSeconds) or not positive(Config.Debug.PerfRefreshSeconds) then
-		table.insert(problems, "Debug: PerfWindowSeconds and PerfRefreshSeconds must be positive")
+	if
+		not positive(Config.Debug.PerfWindowSeconds)
+		or not positive(Config.Debug.PerfRefreshSeconds)
+		or not positive(Config.Debug.PerfCorrectionSeconds)
+	then
+		table.insert(
+			problems,
+			"Debug: PerfWindowSeconds, PerfRefreshSeconds and PerfCorrectionSeconds must be positive"
+		)
 	end
 	local leashLevels = Config.Upgrades.Tracks.Leash.Levels
 	local topLeash = leashLevels[#leashLevels].Value

@@ -118,8 +118,34 @@ local stats = {
 	Window = {} :: { number },
 }
 
--- Called after every drawn frame with that frame's ms and followers drawn, while `/debug perf` is on (PerfOverlay).
-local frameObserver: ((ms: number, drawn: number) -> ())? = nil
+-- One drawn frame's cost, for `/debug perf` (PerfOverlay). Filled only while an observer is set: the split timers
+-- (os.clock around parts of the per-follower loop) cost a little themselves, so they never run otherwise.
+export type FrameSplit = {
+	Ms: number, -- the whole RenderStepped step (includes the timers)
+	SampleMs: number, -- Path.LiveHead, Path.Sample, FollowDistance, DropPassed: where each follower stands
+	WaveMs: number, -- per follower: hop markers, the jump hop and the jump waves (lift)
+	HopMs: number, -- per follower: facing, hop, waddle and the CFrame
+	LoopMs: number, -- the whole per-follower loop, including the two above (the rest: visibility, pools, smoothing, lists)
+	BulkMs: number, -- workspace:BulkMoveTo
+	RecordMs: number, -- Heartbeat recording of every leader since the last drawn frame (outside Ms)
+	Drawn: number,
+	Parts: number,
+	Timers: number, -- os.clock calls made for the split this frame
+}
+local split: FrameSplit = {
+	Ms = 0,
+	SampleMs = 0,
+	WaveMs = 0,
+	HopMs = 0,
+	LoopMs = 0,
+	BulkMs = 0,
+	RecordMs = 0,
+	Drawn = 0,
+	Parts = 0,
+	Timers = 0,
+}
+local frameObserver: ((split: FrameSplit) -> ())? = nil
+local profiling = false -- frameObserver is set: run the split timers
 
 local function folder(): Folder
 	local existing = linesFolder
@@ -405,9 +431,16 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		view.Dirty = false
 		return 0
 	end
+	local sampleStarted = if profiling then os.clock() else 0
 	local head = Path.LiveHead(path, root, view.Humanoid)
 	Path.Sample(path, head, view.Offsets, count, samplePos, sampleDir)
 	local headDist = Path.FollowDistance(path, head)
+	local loopStarted = 0
+	if profiling then
+		loopStarted = os.clock()
+		split.SampleMs += (loopStarted - sampleStarted) * 1000
+		split.Timers += 2
+	end
 	local pathOffsets = view.Offsets
 	local hopDist = path.HopDist
 	local hopAt = path.HopAt
@@ -482,6 +515,7 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 
 		-- Jump hops (4.3): a follower that has just passed a hop marker starts its hop, which plays out in time, so a
 		-- line that stops mid-hop still lands.
+		local waveStarted = if profiling then os.clock() else 0
 		local pathDist = headDist - pathOffsets[i]
 		local previousDist = follower.PathDist
 		if markers > 0 and previousDist and Render.JumpHopAtSpot then
@@ -535,6 +569,11 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 			end
 			lift += waveLift
 		end
+		local hopStarted = 0
+		if profiling then
+			hopStarted = os.clock()
+			split.WaveMs += (hopStarted - waveStarted) * 1000
+		end
 
 		-- Facing along the path; hop and waddle.
 		local direction = sampleDir[i]
@@ -550,9 +589,17 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 			local placed = follower.Placed
 			if placed and lift == 0 then
 				if (frameNumber + i) % farEvery ~= 0 then
+					if profiling then
+						split.HopMs += (os.clock() - hopStarted) * 1000
+						split.Timers += 3
+					end
 					continue
 				end
 				if (pivotPosition - placed).Magnitude < 0.01 and follower.Facing == follower.PlacedFacing then
+					if profiling then
+						split.HopMs += (os.clock() - hopStarted) * 1000
+						split.Timers += 3
+					end
 					continue
 				end
 			end
@@ -568,6 +615,10 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 			cframe = CFrame.lookAt(pivotPosition, pivotPosition + follower.Facing)
 				* CFrame.Angles(0, 0, math.sin(phase) * waddle)
 		end
+		if profiling then
+			split.HopMs += (os.clock() - hopStarted) * 1000
+			split.Timers += 3
+		end
 
 		local parts = item.Parts
 		local offsets = item.Offsets
@@ -582,13 +633,22 @@ local function drawView(view: View, t: number, dt: number, focus: Vector3, hideD
 		end
 	end
 	view.Dirty = false
-	Path.DropPassed(path, headDist - pathOffsets[count])
+	if profiling then
+		local dropStarted = os.clock()
+		split.LoopMs += (dropStarted - loopStarted) * 1000
+		Path.DropPassed(path, headDist - pathOffsets[count])
+		split.SampleMs += (os.clock() - dropStarted) * 1000
+		split.Timers += 2
+	else
+		Path.DropPassed(path, headDist - pathOffsets[count])
+	end
 	return drawn
 end
 
 -- Record every leader into its path. Runs on Heartbeat, with the simulation, so a frame that isn't drawn (a hitch,
 -- or an unfocused Studio window) leaves no gap in the path.
 local function record(dt: number)
+	local recordStarted = if profiling then os.clock() else 0
 	debug.profilebegin("LineRenderer.Record")
 	for ownerId, view in views do
 		local root, humanoid = leaderOf(ownerId)
@@ -641,11 +701,15 @@ local function record(dt: number)
 		view.Moving += (movingTarget - view.Moving) * (1 - math.exp(-8 * dt))
 	end
 	debug.profileend()
+	if profiling then
+		split.RecordMs += (os.clock() - recordStarted) * 1000
+	end
 end
 
 local function step(dt: number)
 	local started = os.clock()
 	debug.profilebegin("LineRenderer")
+	profiling = frameObserver ~= nil
 
 	if syncWanted and started - lastRequestAt >= REQUEST_SECONDS and requestSync then
 		syncWanted = false
@@ -702,7 +766,11 @@ local function step(dt: number)
 	if #partList > 0 then
 		local bulkStarted = os.clock()
 		workspace:BulkMoveTo(partList, cframeList, Enum.BulkMoveMode.FireCFrameChanged)
-		stats.BulkMs += (os.clock() - bulkStarted) * 1000
+		local bulkMs = (os.clock() - bulkStarted) * 1000
+		stats.BulkMs += bulkMs
+		split.BulkMs = bulkMs
+	else
+		split.BulkMs = 0
 	end
 
 	debug.profileend()
@@ -719,8 +787,18 @@ local function step(dt: number)
 	end
 	local observer = frameObserver
 	if observer then
-		observer(ms, drawn)
+		split.Ms = ms
+		split.Drawn = drawn
+		split.Parts = #partList
+		observer(split)
 	end
+	-- Start the next frame's split from zero (RecordMs collects on Heartbeat before it).
+	split.SampleMs = 0
+	split.WaveMs = 0
+	split.HopMs = 0
+	split.LoopMs = 0
+	split.RecordMs = 0
+	split.Timers = 0
 end
 
 -- Debug (Studio only) -------------------------------------------------------------------------------------------
@@ -835,9 +913,10 @@ local function report(command: any, arg: any): any
 	)
 end
 
--- PerfOverlay: get each frame's LineRenderer ms and followers drawn; nil stops it.
-function LineRenderer.SetFrameObserver(observer: ((ms: number, drawn: number) -> ())?): ()
+-- PerfOverlay: get each drawn frame's split (the same table every frame; copy what you keep); nil stops it.
+function LineRenderer.SetFrameObserver(observer: ((split: FrameSplit) -> ())?): ()
 	frameObserver = observer
+	profiling = observer ~= nil
 end
 
 function LineRenderer.Init(): () end

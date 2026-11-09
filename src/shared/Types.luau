@@ -389,6 +389,7 @@ export type DebugConfig = {
 	PerfCommand: string,
 	PerfWindowSeconds: number,
 	PerfRefreshSeconds: number,
+	PerfCorrectionSeconds: number,
 	StudioBridgeName: string,
 	RollMaxSamples: number,
 	MaxLeaders: number,
