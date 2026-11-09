@@ -18,6 +18,7 @@ local TextChatService = game:GetService("TextChatService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript)
+local DebugAccess = require(Shared:WaitForChild("DebugAccess") :: ModuleScript)
 local LineRules = require(Shared:WaitForChild("LineRules") :: ModuleScript)
 local Odds = require(Shared:WaitForChild("Odds") :: ModuleScript)
 local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript)
@@ -58,13 +59,7 @@ local function later(name: string, usage: string, help: string, milestone: strin
 end
 
 function AdminService.CanDebug(userId: number?): boolean
-	if RunService:IsStudio() then
-		return true
-	end
-	if not userId then
-		return false
-	end
-	return table.find(Config.Admin.Whitelist, userId) ~= nil
+	return DebugAccess.Allowed(userId)
 end
 
 -- "me" (the caller, or the only/first player when there is no caller), a name prefix, or a UserId.
@@ -648,6 +643,19 @@ register(
 	end
 )
 
+-- The caller's own client toggles the box (PerfOverlay hears the same chat command); the server only acknowledges.
+register(
+	Config.Debug.PerfCommand,
+	`{Config.Debug.PerfCommand} [on|off]`,
+	"client only: toggle a box with FPS, LineRenderer ms and followers drawn on your own screen",
+	function(caller: Player?)
+		if not caller then
+			return "perf: a client toggle; send it from that player's chat (`/debug perf`), not the bridge"
+		end
+		return `perf: {caller.Name}'s own client shows or hides the box`
+	end
+)
+
 later("coins", "coins <player|me> <amount>", "give coins", "C01-M4")
 later("storage", "storage <player|me> [n|full]", "fill storage", "C01-M4")
 later("reset", "reset <player|me>", "reset a profile (Studio only)", "C01-M4")
@@ -695,7 +703,7 @@ function AdminService.Init(): () end
 
 function AdminService.Start(): ()
 	local command = Instance.new("TextChatCommand")
-	command.Name = "DebugCommand"
+	command.Name = Config.Debug.ChatCommandName
 	command.PrimaryAlias = Config.Debug.ChatCommand
 	command.SecondaryAlias = Config.Debug.ChatCommandShort
 	command.AutocompleteVisible = false

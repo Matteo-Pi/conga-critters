@@ -31,6 +31,7 @@ local ORDER = {
 	"EventUI",
 	"SoundController",
 	"ZoneController",
+	"PerfOverlay",
 }
 
 local TAG = "[Client]"

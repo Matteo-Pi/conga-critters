@@ -1,7 +1,7 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.24
+spec_version: 0.25
 date: 2026-11-09
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps; all re-run for the 150 cap (v0.23). Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
@@ -660,6 +660,7 @@ Assets go in `ReplicatedStorage.Assets` (`Critters/<speciesId>`, `Fx`, `Sounds`)
 | `PenRenderer` | Critters wandering in pens, from `PenDisplay` |
 | `HudController`, `UpgradesUI`, `IndexUI`, `PenUI`, `StoreUI`, `OddsUI`, `DailyUI`, `RebirthUI` | Interface, including the Invite button |
 | `ToastController`, `TutorialController`, `EventUI`, `SoundController`, `ZoneController` | Toasts, tutorial, events, sound, zone-aware buttons |
+| `PerfOverlay` | Debug only: the `/debug perf` box (9.10) |
  
 ### 9.3 Who decides what
 | Thing | Decided by | Client's role |
@@ -823,7 +824,8 @@ Use Roblox AnalyticsService through `TelemetryService`. Check the function names
   - force PolicyService "restricted";
   - set the friend count Friend Boost uses (Studio test players aren't Roblox friends);
   - start Server Luck;
-  - reset a profile (Studio only).
+  - reset a profile (Studio only);
+  - show a performance box on the player's own screen (`/debug perf [on|off]`, client only, off by default): FPS over the last second, the average and worst LineRenderer ms over the last 5 s, and how many followers are drawn.
 - **Config validator**, run at server start. It checks that ids are unique, every biome has every rarity, every weight is positive, every species has a mesh in Assets, and live product ids aren't zero. It stops the start in Studio and warns in live servers.
 ## 10. Milestones and schedule
  
@@ -1120,6 +1122,7 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Open (economy.md 11.11): with lines capped at 100 the model no longer picks the Far band (Snowy Peaks Near 93%, Mid 7%), so pillar 2's deep, risky runs don't pay best. Pacing is unaffected. Pick a lever (band luck, depth or slowdown) before the soft launch, or accept and watch it live | Economy | Decided 2026-11-09 (next row) |
 | 2026-11-09 | Depth-band luck Mid ×1.5 and Far ×2.25 (was ×1.25 and ×1.5), `Biomes.DepthBands`. The smallest pair where the model's optimising player picks Far at least half the time in every biome (Meadow 75%, Jungle and Snowy Peaks 100%) and Mid pays more than Near (75% of Meadow runs, every Jungle and Snowy Peaks run). The Jungle gate stays at 1,000 LP, the developer's call: the Jungle opens at 13.4 min instead of 12.2 (75th percentile 14.3, 90th 15.1), inside the 10–15 minute target; lowering the gate to 900 would undo it. Snowy Peaks and the rebirths move 3% or less (1,000 players), so pen income and rebirth needs are unchanged. Longer Leash reaches rebirth 1 22% sooner (was 19%). The map doesn't change. Options compared in economy.md 6.4 | Developer | Tunable |
 | 2026-11-09 | Proposed, for C01-M6 (economy.md 11.12): Server Luck is capped by the luck cap (10) for high-bait players in the Far band: from bait level 12, and at bait level 15 it gives ×1.66, not ×2. Options: (1) the store text says "up to ×2 luck" and the odds panel shows the capped odds; or (2) apply the cap to the player's own luck first, then multiply by Server Luck, since it boosts the whole server equally. Simulate (2) at C01-M6; the developer decides then | Economy | Proposed |
+| 2026-11-09 | `/debug perf` is handled on the client only: `TextChatCommand.Triggered` fires on the sender's client as well as the server, so `PerfOverlay` toggles the box with no remote, and the server just acknowledges. The client checks the same whitelist (`Shared/DebugAccess.luau`, also used by `AdminService.CanDebug`); that's safe because the box only shows the player's own machine. LineRenderer reports each frame's ms and drawn count to an observer only while the box is on. Numbers in `Config.Debug` (`PerfWindowSeconds` 5, `PerfRefreshSeconds` 0.5) | C01-M3 | Tunable |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
@@ -1158,4 +1161,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.22 (2026-11-08): the line-cap proposal (100, 150 with Longer Leash) logged as Proposed in 16; the draft and model runs are in `docs/drafts/line-cap-100.md`.
 - 0.23 (2026-11-08): the line cap approved and built: 100, 150 with Longer Leash; Leash track to level 9; Conga steps to ×3.5 at 150; rebirth cuts the throw cooldown instead of adding capacity (4.1, 4.3, 4.7, 5.5, 6.1, 6.3); banners 50, 100 and FULL LINE!, BIG STEAL at 25, server toast at 50 (4.4.5, 7.4); walk speed 0.3% a critter, applied in the shared simulation 0.3 s ahead (4.3, 9.1, 9.2, 9.4); budgets and M3/M4/M5/M9 checks and the soak test at 150 (9.5, 9.8, 10.2); pitch "100-critter line" (1.1). Section 16 logs the walk-speed fix, the per-player cooldown, FULL LINE! and an open item on band choice.
 - 0.24 (2026-11-09): band choice decided: depth-band luck Mid ×1.5 and Far ×2.25 (5.3), the Jungle gate unchanged (economy.md v0.6, 6.4, 11.11). Section 16 logs the decision and a proposed C01-M6 item: Server Luck under the luck cap.
+- 0.25 (2026-11-09): `/debug perf`, a client-only performance box for whitelisted players (9.2, 9.10, 16).
  

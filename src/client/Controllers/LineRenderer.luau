@@ -118,6 +118,9 @@ local stats = {
 	Window = {} :: { number },
 }
 
+-- Called after every drawn frame with that frame's ms and followers drawn, while `/debug perf` is on (PerfOverlay).
+local frameObserver: ((ms: number, drawn: number) -> ())? = nil
+
 local function folder(): Folder
 	local existing = linesFolder
 	if existing and existing.Parent then
@@ -714,6 +717,10 @@ local function step(dt: number)
 	if #stats.Window > 120 then
 		table.remove(stats.Window, 1)
 	end
+	local observer = frameObserver
+	if observer then
+		observer(ms, drawn)
+	end
 end
 
 -- Debug (Studio only) -------------------------------------------------------------------------------------------
@@ -826,6 +833,11 @@ local function report(command: any, arg: any): any
 		stats.HopMissMax,
 		if stats.JumpHops > 0 then stats.HopMissSum / stats.JumpHops else 0
 	)
+end
+
+-- PerfOverlay: get each frame's LineRenderer ms and followers drawn; nil stops it.
+function LineRenderer.SetFrameObserver(observer: ((ms: number, drawn: number) -> ())?): ()
+	frameObserver = observer
 end
 
 function LineRenderer.Init(): () end
