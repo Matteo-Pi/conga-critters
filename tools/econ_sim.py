@@ -40,7 +40,7 @@ DEFAULTS = dict(
     golden_hour=5 / 60,                             # share of play time in Golden Hour
     # ---- world (5.3) and movement (spec 3.1, 4.3)
     tiers=[["Sunny Meadow", 1, 1, 0], ["Jungle", 10, 5, 1_000], ["Snowy Peaks", 100, 25, 50_000]],
-    bands=[["Near", 65, 1.0], ["Mid", 200, 1.25], ["Far", 335, 1.5]],
+    bands=[["Near", 65, 1.0], ["Mid", 200, 1.5], ["Far", 335, 2.25]],   # luck since v0.6 (11.11)
     pen_to_gate=120, first_pen_to_gate=40,          # studs
     base_speed=20, throw_every=1.0, join_delay=1.8, overhead=8.0,
     slow_per_critter=0.003, min_speed_factor=0.6,  # walk speed x max(floor, 1 - slow x line length)
@@ -207,7 +207,7 @@ def simulate(p, rng, hours, coins_pass=False, leash_pass=False, favourites=3):
         coins += delivery + pen_income
         lp += lp_gain
         golden_bait += p["golden_bait_per_hour"] * T / 3600 - n_gold
-        runs.append((t, pen_income, delivery, tier, rebirths, band, cap, T))
+        runs.append((t, pen_income, delivery, tier, rebirths, band, cap, T, speed, bait_luck, first))
  
         # auto-place: the pen keeps its most valuable critters
         cand_base = np.concatenate([pen_base, base])

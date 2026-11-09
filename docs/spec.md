@@ -1,12 +1,12 @@
 ---
 title: "Conga Critters: game spec (MVP)"
 repo_path: /docs/spec.md
-spec_version: 0.23
-date: 2026-11-08
+spec_version: 0.24
+date: 2026-11-09
 status: "C01-M3 checks 1–3 and 6–8 done in Studio: follower chain, LineSync, walk speed, jumps and steps; all re-run for the 150 cap (v0.23). Checks 4 (real phone) and 5 (Server Authority decision) wait for the developer."
 concept: "C01 in 'Roblox viral game: research handoff' (2026-11-06)"
 companion_docs:
-  - "/docs/economy.md (v0.5): every tuning number, and the simulation behind them"
+  - "/docs/economy.md (v0.6): every tuning number, and the simulation behind them"
   - "/CHANGELOG.md"
 developer_decisions:
   - "2026-11-06: line cuts take the back half only"
@@ -21,6 +21,7 @@ developer_decisions:
   - "2026-11-07: an optional tier rule for cutting is built but off at launch"
   - "2026-11-07: the Manage Pen menu introduces itself when storage first holds a critter, never before 5 minutes of play"
   - "2026-11-07: every 'Developer to confirm' decision settled (16). Changed: an auto-release on/off switch ships at launch, and the default filter keeps Golden critters (releases Rare or lower, Normal only)"
+  - "2026-11-09: depth-band luck Mid ×1.5 and Far ×2.25, so deep runs pay best again with lines capped at 100; the Jungle gate stays at 1,000 LP (16)"
 ---
  
 # Conga Critters: game spec (MVP)
@@ -441,7 +442,7 @@ Always pair a rarity colour with an icon or label, so colour isn't the only cue.
 | `jungle` | Jungle | 2 | 1,000 | ×10 | ×5 |
 | `peaks` | Snowy Peaks | 3 | 50,000 | ×100 | ×25 |
  
-- Depth-band luck in every biome: Near ×1, Mid ×1.25, Far ×1.5.
+- Depth-band luck in every biome: Near ×1, Mid ×1.5, Far ×2.25 (economy.md 4.1, 6.4).
 - Every biome needs at least one species of each rarity. The config validator (9.10) stops the server starting otherwise.
 - New biomes have 6–8 species and come in two kinds (economy.md 7). **Event biomes** (from Update 1, such as Autumn Woods) are tier-matched (4.5.3) and open to everyone after the tutorial. **New top tiers**, every second or third week, pay ×10 coins and ×5 LP over the previous top tier (Tier 4: ×1,000 and ×125).
 ### 5.4 Critter roster
@@ -1116,11 +1117,13 @@ When signals are weak, fix bounce first, then PTR, then D1.
 | 2026-11-08 | Bug fix (the developer's phone glitches): the server wrote `Humanoid.WalkSpeed` outside the simulation on every join, so the client mispredicted (a 0.69-stud nudge mid-walk, a replayed fall animation mid-jump). Now the server never writes a player's WalkSpeed: `LineService` announces each change in the Player attribute `WalkSpeedPlan` (from, to, at) with `at` = `time()` + `Line.SpeedLeadSeconds` (0.3 s), and `WalkSpeedSync.luau` applies it with `BindToSimulation` on the server and the local client. One change pending at a time; changes inside the lead time merge into the next. Debug leaders, which no client predicts, are still set directly. Measured: 0 mispredictions and no replayed animations mid-walk and mid-fall; the client switched on the planned step | C01-M3 | Final unless changed |
 | 2026-11-08 | Each player's throw cooldown is `LineRules.ThrowCooldown(rebirths)`; the server's cooldown check and the ThrowBait token bucket refill at (own cooldown − 0.1 s), and the client's THROW button reads the Player's `Rebirths` attribute. New debug command `rebirths <player> <n>` until C01-M9; the validator needs `RateLimitSlack` below `CooldownMin` | C01-M3 | Final unless changed |
 | 2026-11-08 | "FULL LINE!" replaces the 50/100 banner when a line of at least `Line.FullLineBannerMin` (100) reaches its own capacity, so a free line of 100 shows FULL LINE! and a pass line shows 100! then FULL LINE! at 150 | C01-M3 | Tunable |
-| 2026-11-08 | Open (economy.md 11.11): with lines capped at 100 the model no longer picks the Far band (Snowy Peaks Near 93%, Mid 7%), so pillar 2's deep, risky runs don't pay best. Pacing is unaffected. Pick a lever (band luck, depth or slowdown) before the soft launch, or accept and watch it live | Economy | Developer to decide |
+| 2026-11-08 | Open (economy.md 11.11): with lines capped at 100 the model no longer picks the Far band (Snowy Peaks Near 93%, Mid 7%), so pillar 2's deep, risky runs don't pay best. Pacing is unaffected. Pick a lever (band luck, depth or slowdown) before the soft launch, or accept and watch it live | Economy | Decided 2026-11-09 (next row) |
+| 2026-11-09 | Depth-band luck Mid ×1.5 and Far ×2.25 (was ×1.25 and ×1.5), `Biomes.DepthBands`. The smallest pair where the model's optimising player picks Far at least half the time in every biome (Meadow 75%, Jungle and Snowy Peaks 100%) and Mid pays more than Near (75% of Meadow runs, every Jungle and Snowy Peaks run). The Jungle gate stays at 1,000 LP, the developer's call: the Jungle opens at 13.4 min instead of 12.2 (75th percentile 14.3, 90th 15.1), inside the 10–15 minute target; lowering the gate to 900 would undo it. Snowy Peaks and the rebirths move 3% or less (1,000 players), so pen income and rebirth needs are unchanged. Longer Leash reaches rebirth 1 22% sooner (was 19%). The map doesn't change. Options compared in economy.md 6.4 | Developer | Tunable |
+| 2026-11-09 | Proposed, for C01-M6 (economy.md 11.12): Server Luck is capped by the luck cap (10) for high-bait players in the Far band: from bait level 12, and at bait level 15 it gives ×1.66, not ×2. Options: (1) the store text says "up to ×2 luck" and the odds panel shows the capped odds; or (2) apply the cap to the player's own luck first, then multiply by Server Luck, since it boosts the whole server equally. Simulate (2) at C01-M6; the developer decides then | Economy | Proposed |
  
 ## 17. Sources
 - The research handoff, in this project: `claude/roblox-viral-game-research-handoff-2026-11-06.md`.
-- `/docs/economy.md` v0.5 and `/tools/econ_sim.py`: the tuned numbers and the simulation behind them.
+- `/docs/economy.md` v0.6 and `/tools/econ_sim.py`: the tuned numbers and the simulation behind them.
 - Roblox Creator Hub, "Quick Words" (updated 2026-10-22): https://create.roblox.com/docs/chat/quick-words
 - Roblox Creator Hub, "Paid random items policy guidelines" (updated 2026-10-15): https://create.roblox.com/docs/production/monetization/paid-random-items
 - Roblox DevForum, "Update on paid random items restriction for UK users under 18": https://devforum.roblox.com/t/update-on-paid-random-items-restriction-for-uk-users-under-18/3072183
@@ -1154,4 +1157,5 @@ When signals are weak, fix bounce first, then PTR, then D1.
 - 0.21 (2026-11-08): phone follower cap lifted for the real-phone test (9.5, 16); `leaders` takes a length and `fill` raises capacity to fit (16).
 - 0.22 (2026-11-08): the line-cap proposal (100, 150 with Longer Leash) logged as Proposed in 16; the draft and model runs are in `docs/drafts/line-cap-100.md`.
 - 0.23 (2026-11-08): the line cap approved and built: 100, 150 with Longer Leash; Leash track to level 9; Conga steps to ×3.5 at 150; rebirth cuts the throw cooldown instead of adding capacity (4.1, 4.3, 4.7, 5.5, 6.1, 6.3); banners 50, 100 and FULL LINE!, BIG STEAL at 25, server toast at 50 (4.4.5, 7.4); walk speed 0.3% a critter, applied in the shared simulation 0.3 s ahead (4.3, 9.1, 9.2, 9.4); budgets and M3/M4/M5/M9 checks and the soak test at 150 (9.5, 9.8, 10.2); pitch "100-critter line" (1.1). Section 16 logs the walk-speed fix, the per-player cooldown, FULL LINE! and an open item on band choice.
+- 0.24 (2026-11-09): band choice decided: depth-band luck Mid ×1.5 and Far ×2.25 (5.3), the Jungle gate unchanged (economy.md v0.6, 6.4, 11.11). Section 16 logs the decision and a proposed C01-M6 item: Server Luck under the luck cap.
  

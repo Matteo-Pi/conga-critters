@@ -42,11 +42,12 @@ end
 local Biomes: Types.BiomesConfig = {
 	List = list,
 	ById = byId,
-	-- Thirds of each biome by depth past its gate.
+	-- Thirds of each biome by depth past its gate. Luck Mid 1.5, Far 2.25 since economy.md v0.6 (11.11): with lines
+	-- capped at 100 the deep bands need this much to pay best (pillar 2).
 	DepthBands = {
 		{ Id = "Near", From = 0, To = 130, Luck = 1 },
-		{ Id = "Mid", From = 130, To = 270, Luck = 1.25 },
-		{ Id = "Far", From = 270, To = 400, Luck = 1.5 },
+		{ Id = "Mid", From = 130, To = 270, Luck = 1.5 },
+		{ Id = "Far", From = 270, To = 400, Luck = 2.25 },
 	},
 }
 

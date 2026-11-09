@@ -23,11 +23,6 @@ local WORKED: { { Lambda: number, Golden: boolean, Expected: { [string]: number 
 		Expected = { Common = 70, Uncommon = 22, Rare = 6, Epic = 1.6, Legendary = 0.35, Mythic = 0.05 },
 	},
 	{
-		Lambda = 1.25,
-		Golden = false,
-		Expected = { Common = 65.1, Uncommon = 25.6, Rare = 6.98, Epic = 1.86, Legendary = 0.407, Mythic = 0.0581 },
-	},
-	{
 		Lambda = 1.5,
 		Golden = false,
 		Expected = { Common = 60.9, Uncommon = 28.7, Rare = 7.83, Epic = 2.09, Legendary = 0.457, Mythic = 0.0652 },
@@ -43,9 +38,19 @@ local WORKED: { { Lambda: number, Golden: boolean, Expected: { [string]: number 
 		Expected = { Common = 46.5, Uncommon = 39.2, Rare = 10.7, Epic = 2.85, Legendary = 0.624, Mythic = 0.0891 },
 	},
 	{
+		Lambda = 2.25,
+		Golden = false,
+		Expected = { Common = 50.9, Uncommon = 36.0, Rare = 9.82, Epic = 2.62, Legendary = 0.573, Mythic = 0.0818 },
+	},
+	{
 		Lambda = 4.02,
 		Golden = false,
 		Expected = { Common = 36.7, Uncommon = 46.4, Rare = 12.7, Epic = 3.37, Legendary = 0.738, Mythic = 0.105 },
+	},
+	{
+		Lambda = 6.03,
+		Golden = false,
+		Expected = { Common = 27.9, Uncommon = 52.9, Rare = 14.4, Epic = 3.85, Legendary = 0.841, Mythic = 0.12 },
 	},
 	{
 		Lambda = 10,
@@ -54,6 +59,7 @@ local WORKED: { { Lambda: number, Golden: boolean, Expected: { [string]: number 
 	},
 	{ Lambda = 1, Golden = true, Expected = { Rare = 70, Epic = 22, Legendary = 7, Mythic = 1 } },
 	{ Lambda = 4.02, Golden = true, Expected = { Rare = 36.7, Epic = 46.4, Legendary = 14.8, Mythic = 2.11 } },
+	{ Lambda = 6.03, Golden = true, Expected = { Rare = 27.9, Epic = 52.9, Legendary = 16.8, Mythic = 2.4 } },
 }
 
 -- Half a unit in the third significant figure of `expected` (a percentage).
